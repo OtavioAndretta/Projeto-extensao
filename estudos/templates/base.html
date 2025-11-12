@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Meu Site{% endblock %}</title>
+
+    <!-- Estilo do chat -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+</head>
+<body>
+    {% block content %}{% endblock %}
+
+    <!-- 🔘 Botão flutuante -->
+    <button id="chat-toggle" class="chat-btn">💬</button>
+
+    <!-- 💬 Janela do chat -->
+    <div id="chat-container" class="chat-container hidden">
+        <div class="chat-header">
+            <h4>Assistente Virtual</h4>
+            <button id="close-chat">✖</button>
+        </div>
+
+        <div id="chat-messages" class="chat-messages"></div>
+
+        <div class="chat-input">
+            <input id="user-input" type="text" placeholder="Digite sua mensagem...">
+            <button id="send-btn">Enviar</button>
+        </div>
+    </div>
+
+    <!-- Script do chat -->
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>

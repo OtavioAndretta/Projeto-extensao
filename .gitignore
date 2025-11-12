@@ -18,7 +18,8 @@ env/
 ENV/
 
 # Logs
-*.log
+*.log'
+*.rtf'
 
 # IDEs
 .vscode/

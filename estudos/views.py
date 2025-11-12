@@ -2,6 +2,7 @@ from flask import Blueprint, render_template,redirect,url_for, session
 import sqlite3
 from estudos import bcrypt
 from .forms import LoginForm, CadastroForm
+from flask import request, jsonify
 views = Blueprint('views',__name__)
 
 
@@ -75,3 +76,15 @@ def experimentos():
 @views.route('/experimento-queda-livre',methods =['POST','GET'])
 def experimento_queda_livre():
     return render_template('experimento-queda-livre.html')
+
+@views.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    message = data.get("message", "").strip()
+
+    if not message:
+        return jsonify({"response": "Por favor, digite algo para começar."})
+
+    # Aqui você pode colocar a integração com uma IA depois.
+    resposta = f"Você disse: {message}"
+    return jsonify({"response": resposta})

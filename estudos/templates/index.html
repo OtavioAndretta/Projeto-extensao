@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Oswald:wght@200..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
     <link rel ='stylesheet' href ="{{url_for('static', filename ='css/index_style.css')}}"
-    <title>Protótipo Extensão</title>
+    
 </head>
 <body>
 
@@ -32,13 +32,6 @@
 </ul>
 </nav>
 
-
-
-
-
-
-
-
 <header>
     <nav id ='navbar'>
         <i class="#" id="nav_logo">Projeto de Extensão - Física Interativa</i>
@@ -50,7 +43,11 @@
         </ul>
     </nav>
 </header>
+{% extends "base.html" %}
 
+{% block title %}Início - Física Interativa{% endblock %}
+
+{% block content %}
 <main id ='content'>
     <section id="home">
         <div id="cta">
@@ -132,13 +129,18 @@
             <h3>Vinicius Pelegrino</h3>
             <p>Responsável pela divulgação e organização da equipe</p>
         </div>
+        <div class="membro">
+            <img src="../imgs/membro3.jpg" alt="Carlos">
+            <h3>Giovani Andreoli</h3>
+            <p>Programador JavaScript</p>
+        </div>
     </div>
 </section>
 
 
 
 
-   <section id="ia">
+    <section id="ia">
     <h2><i class="fa-solid fa-robot"></i> Como a Inteligência Artificial ajuda?</h2>
     
     <div class="ia-box">
@@ -186,6 +188,7 @@
           });
         });
       </script>
+      {% endblock %}
 </body>
 
 </html>
