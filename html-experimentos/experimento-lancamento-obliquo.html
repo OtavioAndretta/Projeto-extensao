@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Experimento: Lançamento Oblíquo — Física Interativa</title>
+
+<!-- Fonte leve -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0f1724;
+    --panel:#0b1220;
+    --accent:#ffd166;
+    --muted:#9aa7b2;
+    --success:#7ee7c6;
+    --danger:#ff6b6b;
+    --card: rgba(255,255,255,0.04);
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  body{background:linear-gradient(180deg,#071028 0%, #071827 60%);color:#e6eef6;display:flex;flex-direction:column;align-items:center;padding:18px;box-sizing:border-box;}
+  .container{max-width:1100px;width:100%;display:grid;grid-template-columns: 1fr 360px;gap:18px;align-items:start;}
+  @media (max-width:980px){ .container{grid-template-columns:1fr; padding-bottom:36px;} }
+
+  /* Canvas card */
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px;padding:14px;box-shadow: 0 6px 24px rgba(3,6,12,0.6);border:1px solid rgba(255,255,255,0.03);
+  }
+  .sim-wrap{display:flex;flex-direction:column;gap:12px;}
+  #viewport{width:100%;height:640px;background:linear-gradient(180deg,#071827 0%, #02101a 100%);border-radius:10px;display:flex;align-items:flex-end;justify-content:center;padding:12px;box-sizing:border-box;position:relative;overflow:hidden;}
+  canvas{background:transparent;border-radius:8px;display:block;width:100%;height:100%;}
+
+  /* Controls */
+  .controls{display:flex;flex-direction:column;gap:10px;}
+  .row{display:flex;gap:8px;align-items:center;}
+  label{font-size:13px;color:var(--muted);min-width:92px;}
+  input[type="range"]{flex:1;}
+  input[type="number"]{width:80px;background:transparent;color:inherit;border:1px solid rgba(255,255,255,0.06);padding:6px;border-radius:6px;text-align:center;}
+  select{background:transparent;color:inherit;border:1px solid rgba(255,255,255,0.06);padding:8px;border-radius:6px;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;}
+  button{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:#071827;font-weight:600;cursor:pointer;}
+  .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 12px;border-radius:8px;cursor:pointer;}
+  .small{font-size:13px;color:var(--muted);}
+
+  /* Right panel */
+  .panel{display:flex;flex-direction:column;gap:12px;}
+  .group{background:var(--card);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);}
+  .h{font-weight:600;color:var(--accent);margin-bottom:6px;font-size:14px;}
+  .metric{display:flex;justify-content:space-between;align-items:center;font-weight:600;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02);}
+  .metric:last-child{border-bottom:0;}
+  .metric .v{color:#fff;font-size:16px;}
+  .muted{color:var(--muted);font-size:13px;}
+  .hud{
+    position:absolute;left:12px;top:12px;background:linear-gradient(180deg, rgba(2,8,23,0.85), rgba(2,12,30,0.7));
+    padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);backdrop-filter: blur(4px);box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  }
+  .hud h4{margin:0;color:var(--accent);font-size:13px;letter-spacing:0.6px;}
+  .hud .line{font-weight:700;margin-top:6px;font-size:15px;color:#fff;}
+  .controls .small-note{font-size:12px;color:var(--muted);margin-top:-6px;}
+
+  /* footer small */
+  .footer-note{font-size:12px;color:var(--muted);text-align:center;margin-top:12px;}
+</style>
+</head>
+<body>
+
+<h2 style="margin:0 0 14px 0;">Lançamento Oblíquo — Simulador Interativo</h2>
+
+<div class="container">
+
+  <!-- Left: Canvas & controls -->
+  <div class="card sim-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="small">Arraste valores ou digite para ajustar. Ative resistência do ar para comportamento mais real.</div>
+      <div style="display:flex;gap:8px;">
+        <button id="btn-launch">Lançar</button>
+        <button id="btn-pause" class="btn-ghost">Pausar</button>
+        <button id="btn-reset" class="btn-ghost">Resetar</button>
+      </div>
+    </div>
+
+    <div id="viewport" style="min-height:420px;">
+      <canvas id="scene" width="900" height="560"></canvas>
+
+      <!-- HUD overlay (grande, legível) -->
+      <div class="hud" id="hud">
+        <h4>DADOS (tempo real)</h4>
+        <div class="line" id="hud-time">Tempo: 0.00 s</div>
+        <div class="line" id="hud-pos">x: 0.00 m — y: 0.00 m</div>
+        <div class="line" id="hud-vel">|v|: 0.00 m/s (vx: 0.00, vy: 0.00)</div>
+      </div>
+    </div>
+
+    <!-- controls -->
+    <div class="controls" style="margin-top:6px;">
+      <div class="row">
+        <label>Velocidade (m/s)</label>
+        <input id="speed-range" type="range" min="1" max="120" value="30">
+        <input id="speed-num" type="number" min="0" max="500" value="30" step="1">
+      </div>
+
+      <div class="row">
+        <label>Ângulo (°)</label>
+        <input id="angle-range" type="range" min="0" max="90" value="45">
+        <input id="angle-num" type="number" min="0" max="90" value="45" step="0.1">
+      </div>
+
+      <div class="row">
+        <label>Altura inicial (m)</label>
+        <input id="height-range" type="range" min="0" max="200" value="0">
+        <input id="height-num" type="number" min="0" max="1000" value="0" step="0.1">
+      </div>
+
+      <div class="row">
+        <label>Gravidade</label>
+        <select id="gravity-select">
+          <option value="9.81">Terra — 9.81 m/s²</option>
+          <option value="1.62">Lua — 1.62 m/s²</option>
+          <option value="3.71">Marte — 3.71 m/s²</option>
+          <option value="0">Personalizada</option>
+        </select>
+        <input id="gravity-num" type="number" min="0" max="50" value="9.81" step="0.01" style="width:82px;">
+      </div>
+
+      <div class="row">
+        <label>Modelo</label>
+        <select id="model-select">
+          <option value="analytic">Ideal (sem ar)</option>
+          <option value="drag">Numérico (com arrasto)</option>
+        </select>
+
+        <label style="min-width:60px;margin-left:6px;" class="small">Drag k</label>
+        <input id="drag-k" type="number" min="0" max="1" step="0.001" value="0.02" style="width:85px;">
+      </div>
+
+      <div class="row">
+        <label>Velocidade do sim</label>
+        <input id="speedFactor" type="range" min="0.1" max="2" step="0.05" value="1">
+        <div style="width:60px;text-align:center;" class="small mute" id="speedFactorLabel">1.00×</div>
+      </div>
+
+      <div class="row">
+        <label>Opções</label>
+        <div style="display:flex;gap:8px;">
+          <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="trail-cb" checked> Rastro</label>
+          <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="grid-cb" checked> Grade</label>
+        </div>
+      </div>
+
+      <div class="small-note">Dica: experimente mesmo ângulo com diferentes velocidades para ver alcance e altura máxima.</div>
+    </div>
+  </div>
+
+  <!-- Right: info and computed metrics -->
+  <aside class="panel">
+    <div class="group">
+      <div class="h">Resumo (previsão)</div>
+      <div class="metric"><div class="muted">Tempo de voo</div><div class="v" id="m-time">— s</div></div>
+      <div class="metric"><div class="muted">Alcance horizontal</div><div class="v" id="m-range">— m</div></div>
+      <div class="metric"><div class="muted">Altura máxima</div><div class="v" id="m-hmax">— m</div></div>
+      <div class="metric"><div class="muted">Vel. inicial (vx, vy)</div><div class="v" id="m-v0">— m/s</div></div>
+    </div>
+
+    <div class="group">
+      <div class="h">Controles Rápidos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="btn-fill-defaults" class="btn-ghost">Defaults</button>
+        <button id="btn-compare" class="btn-ghost">Comparar planetas</button>
+      </div>
+      <div class="muted" style="margin-top:8px;font-size:13px;">Comparar plotará trajetórias para Terra, Lua e Marte sobrepostas.</div>
+    </div>
+
+    <div class="group">
+      <div class="h">Explicação rápida</div>
+      <div class="muted" style="font-size:13px;line-height:1.4;">
+        A equação analítica (sem resistência) usa: <strong>y = y₀ + v₀·sinθ·t − ½·g·t²</strong> e
+        <strong>x = v₀·cosθ·t</strong>. No modelo numérico, adicionamos arrasto quadrático proporcional a k·v².
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<p class="footer-note">Projeto de Extensão — Física Interativa · Simulador leve e didático</p>
+
+<script>
+/* -----------------------
+   Setup & utilities
+   ----------------------- */
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+
+let CW = canvas.width, CH = canvas.height;
+function resizeCanvas(){ // adapt to container width while keeping aspect ratio
+  const rect = canvas.getBoundingClientRect();
+  const desiredW = Math.max(600, Math.floor(rect.width * (window.devicePixelRatio || 1)));
+  const desiredH = Math.max(340, Math.floor(rect.height * (window.devicePixelRatio || 1)));
+  canvas.width = desiredW;
+  canvas.height = desiredH;
+  // keep CSS size
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  CW = canvas.width; CH = canvas.height;
+  // reset transform for crisp drawing
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize', () => { resizeCanvas(); drawOnce(); });
+resizeCanvas();
+
+/* Elements */
+const speedRange = document.getElementById('speed-range');
+const speedNum = document.getElementById('speed-num');
+const angleRange = document.getElementById('angle-range');
+const angleNum = document.getElementById('angle-num');
+const heightRange = document.getElementById('height-range');
+const heightNum = document.getElementById('height-num');
+const gravitySelect = document.getElementById('gravity-select');
+const gravityNum = document.getElementById('gravity-num');
+const modelSelect = document.getElementById('model-select');
+const dragK = document.getElementById('drag-k');
+const btnLaunch = document.getElementById('btn-launch');
+const btnPause = document.getElementById('btn-pause');
+const btnReset = document.getElementById('btn-reset');
+const btnDefaults = document.getElementById('btn-fill-defaults');
+const btnCompare = document.getElementById('btn-compare');
+const speedFactor = document.getElementById('speedFactor');
+const speedFactorLabel = document.getElementById('speedFactorLabel');
+const trailCb = document.getElementById('trail-cb');
+const gridCb = document.getElementById('grid-cb');
+
+const hudTime = document.getElementById('hud-time');
+const hudPos = document.getElementById('hud-pos');
+const hudVel = document.getElementById('hud-vel');
+
+const mTime = document.getElementById('m-time');
+const mRange = document.getElementById('m-range');
+const mHmax = document.getElementById('m-hmax');
+const mV0 = document.getElementById('m-v0');
+
+/* Sync range + number inputs */
+function syncRangeInput(rangeEl, numEl){
+  rangeEl.addEventListener('input', ()=>{ numEl.value = rangeEl.value; updatePreview(); });
+  numEl.addEventListener('input', ()=>{ rangeEl.value = numEl.value; updatePreview(); });
+}
+syncRangeInput(speedRange, speedNum);
+syncRangeInput(angleRange, angleNum);
+syncRangeInput(heightRange, heightNum);
+
+/* Gravity select */
+gravitySelect.addEventListener('change', () => {
+  const v = parseFloat(gravitySelect.value);
+  if (v === 0){ gravityNum.disabled = false; gravityNum.value = 9.81; }
+  else { gravityNum.disabled = true; gravityNum.value = v; }
+  updatePreview();
+});
+gravityNum.addEventListener('input', updatePreview);
+
+/* speed factor label */
+speedFactor.addEventListener('input', ()=> speedFactorLabel.textContent = Number(speedFactor.value).toFixed(2) + '×');
+
+/* Defaults */
+btnDefaults.addEventListener('click', () => {
+  speedNum.value = 30; speedRange.value = 30;
+  angleNum.value = 45; angleRange.value = 45;
+  heightNum.value = 0; heightRange.value = 0;
+  gravitySelect.value = '9.81'; gravityNum.value = 9.81; gravityNum.disabled = true;
+  modelSelect.value = 'analytic'; dragK.value = 0.02; speedFactor.value = 1; speedFactorLabel.textContent='1.00×';
+  updatePreview(); drawOnce();
+});
+
+/* Compare trajectories (Terra/Lua/Marte) */
+btnCompare.addEventListener('click', ()=>{
+  const initial = currentInputs();
+  simulateComparison(initial);
+});
+
+/* Basic state */
+let running = false;
+let paused = false;
+let lastTimestamp = null;
+let tSim = 0; // simulation time in seconds
+let simTrail = [];
+let colors = { projectile:'#FF6B6B', trail:'#FFB4B4', grid:'#073A4A', axis:'#0b5a6f' };
+
+/* Convert degrees to radians */
+const toRad = a => (a*Math.PI/180);
+
+/* -----------------------
+   Stable analytic metrics
+   ----------------------- */
+function analyticMetrics(v0, angleDeg, g, y0){
+  const th = toRad(angleDeg);
+  const v0y = v0*Math.sin(th);
+  const v0x = v0*Math.cos(th);
+
+  // handle zero gravity gracefully
+  if (Math.abs(g) < 1e-9){
+    return {
+      tFlight: Infinity,
+      hmax: (v0y > 0 ? Infinity : y0),
+      range: Infinity,
+      v0x,
+      v0y
+    };
+  }
+
+  const a = -0.5 * g;
+  const b = v0y;
+  const c = y0;
+
+  const disc = b*b - 4*a*c;
+  let tFlight = NaN;
+  if (disc >= 0){
+    const r1 = (-b + Math.sqrt(disc)) / (2*a);
+    const r2 = (-b - Math.sqrt(disc)) / (2*a);
+    tFlight = Math.max(r1, r2);
+    if (tFlight < 0) tFlight = NaN;
+  }
+
+  const hmax = y0 + (v0y * v0y) / (2 * g);
+  const range = isFinite(tFlight) ? v0x * tFlight : Infinity;
+  return { tFlight, hmax, range, v0x, v0y };
+}
+
+/* Draw once preview (static) */
+function drawOnce(){
+  resizeCanvas();
+  ctx.clearRect(0,0,CW,CH);
+  if (gridCb.checked) drawGrid();
+  drawGroundLine();
+  const inputs = currentInputs();
+  const metrics = analyticMetrics(inputs.v0, inputs.angle, inputs.g, inputs.h0);
+  if (isFinite(metrics.tFlight)) drawPathAnalytic(inputs, metrics.range, metrics.hmax, 'rgba(125,200,255,0.85)');
+  drawLauncher(inputs.h0);
+}
+
+/* Current inputs */
+function currentInputs(){ return {
+  v0: Number(speedNum.value),
+  angle: Number(angleNum.value),
+  h0: Math.max(0, Number(heightNum.value)),
+  g: Number(gravityNum.value),
+  model: modelSelect.value,
+  k: Number(dragK.value),
+  speedFactor: Number(speedFactor.value)
+};}
+
+/* World -> screen mapping helpers (we compute scale to fit path) */
+function computeScales(rangeMeters, maxHeightMeters){
+  const margin = 40;
+  const availW = CW - margin*2;
+  const availH = CH - margin*2;
+  const xScale = (rangeMeters>0 && isFinite(rangeMeters))? (availW / (rangeMeters*1.05)) : (availW / 50);
+  const yScale = (maxHeightMeters>0 && isFinite(maxHeightMeters))? (availH / (maxHeightMeters*1.2)) : (availH / 30);
+  return { xScale, yScale, margin };
+}
+
+/* Draw grid (light) */
+function drawGrid(){
+  ctx.save();
+  // subtle pattern; keep lightweight
+  ctx.fillStyle = 'transparent';
+  ctx.fillRect(0,0,CW,CH);
+  ctx.restore();
+}
+
+/* Draw ground line */
+function drawGroundLine(){
+  ctx.save();
+  ctx.strokeStyle = colors.axis; ctx.lineWidth = 2;
+  const baseY = CH - 30;
+  ctx.beginPath();
+  ctx.moveTo(0, baseY);
+  ctx.lineTo(CW, baseY);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* Draw launcher (left bottom) at height h0 */
+function drawLauncher(h0){
+  const metrics = analyticMetrics(Number(speedNum.value), Number(angleNum.value), Number(gravityNum.value), h0);
+  const sc = computeScales(Math.max(metrics.range || 20, 20), Math.max(metrics.hmax || 10, 10));
+  const {xScale,yScale,margin} = sc;
+  const baseY = CH - margin;
+  const lx = margin;
+  const ly = baseY - h0 * yScale;
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(lx-6, ly-6, 12, 6);
+  ctx.restore();
+}
+
+/* Draw analytic path preview (optimized) */
+function drawPathAnalytic(inputs, range, hmax, color='#77dd77'){
+  const met = analyticMetrics(inputs.v0, inputs.angle, inputs.g, inputs.h0);
+  if (!isFinite(met.tFlight)) return;
+  const {xScale,yScale,margin} = computeScales(Math.max(range, 20), Math.max(hmax, 10));
+  const baseY = CH - margin;
+
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i=0;i<=200;i++){
+    const tt = (i/200) * met.tFlight;
+    const x = inputs.v0*Math.cos(toRad(inputs.angle))*tt;
+    const y = inputs.h0 + inputs.v0*Math.sin(toRad(inputs.angle))*tt - 0.5*inputs.g*tt*tt;
+    const sx = margin + x*xScale;
+    const sy = baseY - y*yScale;
+    if (i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* Convert world coords (meters) to screen */
+function worldToScreen(xm, ym, rangeMeters, maxHeightMeters){
+  const {xScale,yScale,margin} = computeScales(Math.max(rangeMeters, 20), Math.max(maxHeightMeters, 10));
+  const baseY = CH - margin;
+  const sx = margin + xm * xScale;
+  const sy = baseY - ym * yScale;
+  return {sx, sy};
+}
+
+/* -----------------------
+   Simulation core
+   ----------------------- */
+let simState = { x:0, y:0, vx:0, vy:0, t:0 };
+let simMetrics = {}; // cached metrics for analytic model
+
+function prepareSimulation(){
+  const inp = currentInputs();
+  simMetrics = analyticMetrics(inp.v0, inp.angle, inp.g, inp.h0);
+  // initial conditions
+  const ang = toRad(inp.angle);
+  simState.x = 0;
+  simState.y = Math.max(0, inp.h0); // ensure non-negative
+  simState.vx = inp.v0 * Math.cos(ang);
+  simState.vy = inp.v0 * Math.sin(ang);
+  simState.t = 0;
+  simTrail = [];
+  tSim = 0;
+  lastTimestamp = null;
+}
+
+/* Launch handler */
+btnLaunch.addEventListener('click', ()=>{
+  prepareSimulation();
+  running = true;
+  paused = false;
+  btnPause.textContent = 'Pausar';
+  lastTimestamp = null;
+  requestAnimationFrame(loop);
+});
+
+/* Pause/resume */
+btnPause.addEventListener('click', ()=>{
+  if (!running) return;
+  paused = !paused;
+  btnPause.textContent = paused ? 'Retomar' : 'Pausar';
+});
+
+/* Reset */
+btnReset.addEventListener('click', ()=>{
+  running = false; paused=false; lastTimestamp=null; tSim=0;
+  simTrail = []; prepareSimulation(); drawOnce();
+  hudTime.textContent = 'Tempo: 0.00 s';
+  hudPos.textContent = 'x: 0.00 m — y: 0.00 m';
+  hudVel.textContent = '|v|: 0.00 m/s (vx: 0.00, vy: 0.00)';
+});
+
+/* Update preview & metrics */
+function updatePreview(){
+  const inp = currentInputs();
+  const metrics = analyticMetrics(inp.v0, inp.angle, inp.g, inp.h0);
+  mTime.textContent = isFinite(metrics.tFlight)? metrics.tFlight.toFixed(3)+' s' : '—';
+  mRange.textContent = isFinite(metrics.range)? metrics.range.toFixed(2)+' m' : '—';
+  mHmax.textContent = isFinite(metrics.hmax)? metrics.hmax.toFixed(2)+' m' : '—';
+  mV0.textContent = `${metrics.v0x.toFixed(2)} , ${metrics.v0y.toFixed(2)} m/s`;
+  drawOnce();
+}
+updatePreview();
+
+/* Comparison simulation (overlay Terra/Lua/Marte) */
+function simulateComparison(initial){
+  drawOnce();
+  const planets = [{g:9.81,c:'#FF9F1C',name:'Terra'},{g:1.62,c:'#7BE495',name:'Lua'},{g:3.71,c:'#6EA8FE',name:'Marte'}];
+  for (const p of planets){
+    const met = analyticMetrics(initial.v0, initial.angle, p.g, initial.h0);
+    if (!isFinite(met.tFlight)) continue;
+    const {xScale,yScale,margin} = computeScales(Math.max(met.range, 20), Math.max(met.hmax, 10));
+    const baseY = CH - margin;
+    ctx.save(); ctx.strokeStyle = p.c; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i=0;i<=200;i++){
+      const tt = (i/200)*met.tFlight;
+      const x = initial.v0*Math.cos(toRad(initial.angle))*tt;
+      const y = initial.h0 + initial.v0*Math.sin(toRad(initial.angle))*tt - 0.5*p.g*tt*tt;
+      const sx = margin + x*xScale;
+      const sy = baseY - y*yScale;
+      if (i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+    }
+    ctx.stroke(); ctx.restore();
+  }
+}
+
+/* Main loop */
+function loop(timestamp){
+  if (!running) return;
+  if (paused){ lastTimestamp = timestamp; requestAnimationFrame(loop); return; }
+  if (!lastTimestamp) lastTimestamp = timestamp;
+  let dtReal = (timestamp - lastTimestamp) / 1000; // seconds
+  // clamp to avoid huge jumps if tab was inactive or frame delay big
+  dtReal = Math.min(dtReal, 0.05); // clamp ≈ 20 FPS worst-case
+  lastTimestamp = timestamp;
+  const sf = Number(speedFactor.value);
+  const dt = dtReal * sf;
+
+  // update sim time
+  tSim += dt;
+
+  const inp = currentInputs();
+  if (inp.model === 'analytic'){
+    // Use analytic formulas to set position based on tSim
+    simState.t = tSim;
+    const th = toRad(inp.angle);
+    const x = inp.v0 * Math.cos(th) * simState.t;
+    const y = inp.h0 + inp.v0 * Math.sin(th) * simState.t - 0.5 * inp.g * simState.t * simState.t;
+    const vx = inp.v0 * Math.cos(th);
+    const vy = inp.v0 * Math.sin(th) - inp.g * simState.t;
+
+    simState.x = x; simState.y = y; simState.vx = vx; simState.vy = vy;
+    simTrail.push({x,y});
+    // Parar somente se tocar o solo enquanto estiver descendo e sim já progrediu um pouco
+    if (simState.y <= 0 && simState.vy <= 0 && simState.t > 0.02){
+      simState.y = 0;
+      running = false;
+    }
+  } else {
+    // Numerical integration with quadratic drag: dv/dt = -g + (-k/m) * v * v_dir
+    const k = Number(inp.k);
+    const m = 1.0; // assume 1 kg mass (k scaled accordingly)
+    // semi-implicit Euler
+    const v = Math.hypot(simState.vx, simState.vy);
+    const ax_drag = (v>0) ? (-k/m) * simState.vx * v : 0;
+    const ay_drag = (v>0) ? (-k/m) * simState.vy * v : 0;
+    const ax = ax_drag;
+    const ay = -inp.g + ay_drag;
+    // update velocity
+    simState.vx += ax * dt;
+    simState.vy += ay * dt;
+    // update position
+    simState.x += simState.vx * dt;
+    simState.y += simState.vy * dt;
+    simState.t += dt;
+    simTrail.push({x: simState.x, y: simState.y});
+    // Stop if touches ground and is descending
+    if (simState.y <= 0 && simState.vy <= 0 && simState.t > 0.02){
+      simState.y = 0;
+      running = false;
+    }
+  }
+
+  // draw
+  renderFrame();
+
+  // update HUD
+  const speed = Math.hypot(simState.vx, simState.vy);
+  hudTime.textContent = `Tempo: ${tSim.toFixed(2)} s`;
+  hudPos.textContent = `x: ${Math.max(simState.x,0).toFixed(2)} m — y: ${Math.max(simState.y,0).toFixed(2)} m`;
+  hudVel.textContent = `|v|: ${speed.toFixed(2)} m/s (vx: ${simState.vx.toFixed(2)}, vy: ${simState.vy.toFixed(2)})`;
+
+  if (running) requestAnimationFrame(loop);
+}
+
+/* Render frame (draw ground, trail, projectile, axes & HUD already separate) */
+function renderFrame(){
+  ctx.clearRect(0,0,CW,CH);
+  if (gridCb.checked) drawGrid(); // light grid
+  drawGroundLine();
+
+  // determine scale using analytic metrics for sizing
+  const metrics = analyticMetrics(Number(speedNum.value), Number(angleNum.value), Number(gravityNum.value), Number(heightNum.value));
+  const maxRangeGuess = Math.max((isFinite(metrics.range)?metrics.range:10), simState.x + 10);
+  const maxHGuess = Math.max((isFinite(metrics.hmax)?metrics.hmax:10), simState.y + 10);
+  const {xScale,yScale,margin} = computeScales(maxRangeGuess, maxHGuess);
+  const baseY = CH - margin;
+
+  // draw trail
+  if (trailCb.checked && simTrail.length>0){
+    ctx.save();
+    ctx.strokeStyle = colors.trail; ctx.lineWidth = 2; ctx.globalAlpha = 0.95;
+    ctx.beginPath();
+    for (let i=0;i<simTrail.length;i++){
+      const p = simTrail[i];
+      const {sx,sy} = worldToScreen(p.x, Math.max(p.y,0), maxRangeGuess, maxHGuess);
+      if (i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // draw projectile
+  if (simState.y >= 0){
+    const pos = worldToScreen(simState.x, simState.y, maxRangeGuess, maxHGuess);
+    ctx.save();
+    ctx.beginPath();
+    ctx.fillStyle = colors.projectile;
+    ctx.arc(pos.sx, pos.sy, Math.max(6, Math.min(12, CW*0.01)), 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // draw predicted landing vertical (dashed) if analytic available
+  if (isFinite(metrics.tFlight)){
+    const landX = metrics.range;
+    const landScreen = worldToScreen(landX, 0, maxRangeGuess, maxHGuess);
+    ctx.save();
+    ctx.setLineDash([6,6]); ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(landScreen.sx, baseY); ctx.lineTo(landScreen.sx, baseY-8); ctx.stroke();
+    ctx.restore();
+  }
+
+  // axis ticks (meters)
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.font = '11px Inter';
+  const niceXStep = chooseNiceStep((CW - margin*2) / ( (xScale>0) ? xScale : 1 ));
+  for (let xm=0; xm<=maxRangeGuess; xm += niceXStep){
+    const s = worldToScreen(xm, 0, maxRangeGuess, maxHGuess);
+    ctx.fillRect(s.sx-0.5, baseY, 1, 6);
+    ctx.fillText(`${Math.round(xm)} m`, s.sx-10, baseY+18);
+  }
+  ctx.restore();
+}
+
+/* Utility: choose nice step for axis ticks */
+function chooseNiceStep(maxMeters){
+  const targetTicks = 8;
+  const step = Math.pow(10, Math.floor(Math.log10(Math.max(1, maxMeters/targetTicks))));
+  const candidates = [1,2,2.5,5,10];
+  for (let c of candidates){
+    const s = c * step;
+    if ((maxMeters / s) <= 12) return s;
+  }
+  return step;
+}
+
+/* initialise and draw */
+prepareSimulation();
+drawOnce();
+
+/* update preview when sliders changed */
+document.querySelectorAll('input,select').forEach(e=>{
+  e.addEventListener('change', updatePreview);
+});
+
+/* small helper to keep canvas crisp on high-DPI displays (initial) */
+function fixHiDPICanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 900;
+  const cssH = canvas.clientHeight || 560;
+  canvas.width = Math.max(600, Math.floor(cssW * dpr));
+  canvas.height = Math.max(340, Math.floor(cssH * dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+fixHiDPICanvas();
+window.addEventListener('resize', () => { fixHiDPICanvas(); drawOnce(); });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pêndulo Simples — Física Interativa</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#071827; --accent:#FFD166; --muted:#9aa7b2; --panel: rgba(255,255,255,0.03);
+  --hud-bg: rgba(2,8,23,0.85); --bob:#FF6B6B;
+}
+*{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#e6eef6}
+body{margin:18px;background:linear-gradient(180deg,#071028 0%, #071827 60%);display:flex;flex-direction:column;align-items:center;min-height:100vh}
+h2{margin:0 0 12px 0}
+.container{width:100%;max-width:1100px;display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+@media (max-width:980px){ .container{grid-template-columns:1fr;padding:12px} }
+
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid var(--panel);box-shadow:0 8px 30px rgba(2,6,12,0.6)}
+#viewport{height:520px;border-radius:10px;background:linear-gradient(180deg,#071827,#02101a);position:relative;overflow:hidden;padding:12px;display:flex;align-items:center;justify-content:center}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:transparent}
+
+.controls{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;align-items:center}
+label{min-width:110px;color:var(--muted);font-size:13px}
+input[type="range"]{flex:1}
+input[type="number"], select{width:90px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+#gravity-select{min-width:150px;width:150px}
+button{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:#071827;font-weight:700;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 12px;border-radius:8px;cursor:pointer}
+
+.hud{position:absolute;left:12px;top:12px;background:var(--hud-bg);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);backdrop-filter: blur(4px)}
+.hud h4{margin:0;color:var(--accent);font-size:13px}
+.hud .line{margin-top:6px;font-weight:700;color:#fff;font-size:15px}
+
+.panel{display:flex;flex-direction:column;gap:12px}
+.group{background:var(--panel);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+.h{color:var(--accent);font-weight:700;margin-bottom:8px}
+.metric{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02)}
+.metric:last-child{border-bottom:0}
+.metric .v{font-weight:700;color:#fff}
+.muted{color:var(--muted);font-size:13px}
+.footer-note{text-align:center;color:var(--muted);font-size:12px;margin-top:12px}
+</style>
+</head>
+<body>
+
+<h2>Pêndulo Simples — Simulador Interativo</h2>
+
+<div class="container">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="muted">Altere comprimento, massa, amortecimento e ângulo inicial.</div>
+      <div style="display:flex;gap:8px">
+        <button id="btn-start">Iniciar</button>
+        <button id="btn-pause" class="btn-ghost">Pausar</button>
+        <button id="btn-reset" class="btn-ghost">Resetar</button>
+      </div>
+    </div>
+
+    <div id="viewport" style="margin-top:12px">
+      <canvas id="canvas" width="900" height="520"></canvas>
+
+      <div class="hud" id="hud">
+        <h4>DADOS (tempo real)</h4>
+        <div class="line" id="hud-time">Tempo: 0.00 s</div>
+        <div class="line" id="hud-angle">θ: 0.00°</div>
+        <div class="line" id="hud-omega">ω: 0.00°/s</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="row">
+        <label>Comprimento (m)</label>
+        <input id="length-range" type="range" min="0.1" max="5" step="0.01" value="1">
+        <input id="length-num" type="number" min="0.1" max="20" step="0.01" value="1" style="width:90px">
+      </div>
+
+      <div class="row">
+        <label>Massa (kg)</label>
+        <input id="mass-range" type="range" min="0.1" max="5" step="0.1" value="1">
+        <input id="mass-num" type="number" min="0.1" max="50" step="0.1" value="1" style="width:90px">
+      </div>
+
+      <div class="row">
+        <label>Ângulo inicial (°)</label>
+        <input id="angle-range" type="range" min="-170" max="170" step="0.1" value="20">
+        <input id="angle-num" type="number" min="-170" max="170" step="0.1" value="20" style="width:90px">
+      </div>
+
+      <div class="row">
+        <label>Gravidade</label>
+        <select id="gravity-select">
+          <option value="9.81">Terra — 9.81</option>
+          <option value="1.62">Lua — 1.62</option>
+          <option value="3.71">Marte — 3.71</option>
+          <option value="0">Personalizada</option>
+        </select>
+        <input id="gravity-num" type="number" min="0" max="50" value="9.81" step="0.01" style="width:90px">
+      </div>
+
+      <div class="row">
+        <label>Modelo</label>
+        <select id="model-select">
+          <option value="small">Analítico (small-angle)</option>
+          <option value="nonlinear">Numérico (não linear)</option>
+        </select>
+
+        <label style="min-width:60px;margin-left:6px" class="muted">Amort. b</label>
+        <input id="damping" type="number" min="0" max="5" step="0.001" value="0.05" style="width:90px">
+      </div>
+
+      <div class="row">
+        <label>Vel. sim</label>
+        <input id="speedFactor" type="range" min="0.1" max="2" step="0.05" value="1" style="flex:1">
+        <div style="width:60px;text-align:center;color:var(--muted)" id="speedLabel">1.00×</div>
+      </div>
+
+      <div class="row" style="align-items:center">
+        <label>Opções</label>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="trail" checked> Trajetória</label>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="energy" checked> Mostrar energia</label>
+      </div>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <div class="group">
+      <div class="h">Previsões</div>
+      <div class="metric"><div class="muted">Período (small-angle)</div><div class="v" id="m-period">— s</div></div>
+      <div class="metric"><div class="muted">Amplitude inicial</div><div class="v" id="m-amp">— °</div></div>
+      <div class="metric"><div class="muted">Energia inicial</div><div class="v" id="m-energy">— J</div></div>
+      <div class="metric"><div class="muted">Período medido</div><div class="v" id="m-period-measured">— s</div></div>
+    </div>
+
+    <div class="group">
+      <div class="h">Controles rápidos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="btn-defaults" class="btn-ghost">Defaults</button>
+        <button id="btn-export" class="btn-ghost">Export CSV</button>
+      </div>
+      <div class="muted" style="margin-top:8px">Export gera arquivo com tempo,θ(°),ω(°/s),E(J).</div>
+    </div>
+
+    <div class="group">
+      <div class="h">Explicação</div>
+      <div class="muted" style="line-height:1.4">
+        <strong>O que é</strong><br>
+        Um pêndulo é uma massa presa por um fio que oscila por ação da gravidade. O movimento depende do comprimento do fio e da gravidade.
+        <br><br>
+        <strong>Por que existem dois modos?</strong><br>
+        - <em>Small-angle</em>: aproximação válida quando o ângulo inicial é pequeno (θ ≲ 15°). Dá uma fórmula simples para o período: <em>T = 2π√(L/g)</em>.<br>
+        - <em>Nonlinear</em>: resolve a equação completa (sin θ). Útil quando o ângulo é grande.
+        <br><br>
+        <strong>Como explorar</strong><br>
+        - Aumente L e veja T crescer como √L. <br>
+        - Aumente θ₀ e compare período medido com o teórico. <br>
+        - Adicione amortecimento (b) para ver a energia diminuir no tempo. <br>
+        - Exporte os dados em CSV para plotar θ(t) ou calcular o período experimental.
+      </div>
+    </div>
+  </aside>
+</div>
+  </aside>
+</div>
+
+<p class="footer-note">Projeto de Extensão — Física Interativa · Pêndulo Simples</p>
+
+<script>
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const btnStart = document.getElementById('btn-start');
+const btnPause = document.getElementById('btn-pause');
+const btnReset = document.getElementById('btn-reset');
+const btnDefaults = document.getElementById('btn-defaults');
+const btnExport = document.getElementById('btn-export');
+
+const lengthRange = document.getElementById('length-range');
+const lengthNum = document.getElementById('length-num');
+const massRange = document.getElementById('mass-range');
+const massNum = document.getElementById('mass-num');
+const angleRange = document.getElementById('angle-range');
+const angleNum = document.getElementById('angle-num');
+const gravitySelect = document.getElementById('gravity-select');
+const gravityNum = document.getElementById('gravity-num');
+const modelSelect = document.getElementById('model-select');
+const dampingInput = document.getElementById('damping');
+const trailCb = document.getElementById('trail');
+const energyCb = document.getElementById('energy');
+const speedFactor = document.getElementById('speedFactor');
+const speedLabel = document.getElementById('speedLabel');
+
+const hudTime = document.getElementById('hud-time');
+const hudAngle = document.getElementById('hud-angle');
+const hudOmega = document.getElementById('hud-omega');
+
+const mPeriod = document.getElementById('m-period');
+const mAmp = document.getElementById('m-amp');
+const mEnergy = document.getElementById('m-energy');
+const mPeriodMeasured = document.getElementById('m-period-measured');
+
+let CW = canvas.width, CH = canvas.height;
+const BOB_COLOR = '#FF6B6B';
+
+/* HiDPI & resize */
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(600, Math.floor(rect.width * dpr));
+  const h = Math.max(420, Math.floor(rect.height * dpr));
+  canvas.width = w; canvas.height = h;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  CW = canvas.width; CH = canvas.height;
+}
+window.addEventListener('resize', ()=>{ resizeCanvas(); drawStatic(); });
+resizeCanvas();
+
+/* Sync inputs */
+function sync(rangeEl, numEl){
+  rangeEl.addEventListener('input', ()=>{ numEl.value = rangeEl.value; updatePreview(); });
+  numEl.addEventListener('input', ()=>{ rangeEl.value = numEl.value; updatePreview(); });
+}
+sync(lengthRange, lengthNum);
+sync(massRange, massNum);
+sync(angleRange, angleNum);
+
+/* Gravity select behavior */
+gravitySelect.addEventListener('change', ()=>{
+  const v = parseFloat(gravitySelect.value);
+  if (v === 0){ gravityNum.disabled = false; gravityNum.value = 9.81; }
+  else { gravityNum.disabled = true; gravityNum.value = v; }
+  updatePreview();
+});
+gravityNum.addEventListener('input', updatePreview);
+
+/* Speed factor */
+speedFactor.addEventListener('input', ()=> speedLabel.textContent = Number(speedFactor.value).toFixed(2) + '×');
+
+/* Defaults */
+btnDefaults.addEventListener('click', ()=>{
+  lengthRange.value = 1; lengthNum.value = 1;
+  massRange.value = 1; massNum.value = 1;
+  angleRange.value = 20; angleNum.value = 20;
+  gravitySelect.value = '9.81'; gravityNum.value = 9.81; gravityNum.disabled = true;
+  modelSelect.value = 'small'; dampingInput.value = 0.05;
+  speedFactor.value = 1; speedLabel.textContent = '1.00×';
+  updatePreview(); drawStatic();
+});
+
+/* Export CSV */
+let recorded = [];
+btnExport.addEventListener('click', ()=>{
+  if (!recorded || recorded.length === 0){ alert('Nenhum dado registrado. Rode a simulação primeiro.'); return; }
+  const header = 't,theta_deg,omega_deg_per_s,energy_J\n';
+  const body = recorded.map(r => [r.t.toFixed(4), r.theta.toFixed(6), r.omega.toFixed(6), r.energy.toFixed(6)].join(',')).join('\n');
+  const blob = new Blob([header + body], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'pendulo_trajetoria.csv'; a.click(); URL.revokeObjectURL(url);
+});
+
+/* Physics helpers */
+function inputs(){
+  return {
+    L: Math.max(0.01, Number(lengthNum.value)),
+    m: Math.max(0.0001, Number(massNum.value)),
+    theta0deg: Number(angleNum.value),
+    g: Number(gravityNum.value),
+    model: modelSelect.value,
+    b: Number(dampingInput.value),
+    speedFactor: Number(speedFactor.value)
+  };
+}
+
+function smallAnglePeriod(L,g){
+  if (Math.abs(g) < 1e-9) return Infinity;
+  return 2 * Math.PI * Math.sqrt(L / g);
+}
+
+function energy(m,g,L,theta,omega){
+  const pot = m * g * L * (1 - Math.cos(theta));
+  const kin = 0.5 * m * (L*L) * (omega*omega);
+  return pot + kin;
+}
+
+/* Drawing helpers */
+function clear(){ ctx.clearRect(0,0,CW,CH); }
+
+function drawStatic(){
+  clear();
+  drawSupport();
+  drawPrediction();
+}
+
+function drawSupport(){
+  const cx = CW/2, cy = 80;
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillRect(cx-40, cy-6, 80, 4);
+  ctx.restore();
+}
+
+function drawPrediction(){
+  const cx = CW/2, cy = 80;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.setLineDash([6,8]);
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, CH-40); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawPendulum(theta){
+  clear();
+  drawSupport();
+  const inp = inputs();
+  const cx = CW/2, cy = 80;
+  const scale = Math.min((CH - 160) / (inp.L * 1.5), 500);
+  const Lpx = inp.L * scale;
+  const bx = cx + Lpx * Math.sin(theta);
+  const by = cy + Lpx * Math.cos(theta);
+
+  // rod
+  ctx.save();
+  ctx.strokeStyle = 'rgba(200,200,255,0.9)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by); ctx.stroke();
+
+  // bob
+  ctx.beginPath(); ctx.fillStyle = BOB_COLOR; ctx.arc(bx, by, Math.max(8, Math.min(18, CW*0.01)), 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawTrailAngles(tr){
+  if (!tr || tr.length === 0) return;
+  const inp = inputs();
+  const cx = CW/2, cy = 80;
+  const scale = Math.min((CH - 160) / (inp.L * 1.5), 500);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,180,180,0.9)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i=0;i<tr.length;i++){
+    const theta = tr[i];
+    const bx = cx + inp.L * scale * Math.sin(theta);
+    const by = cy + inp.L * scale * Math.cos(theta);
+    if (i===0) ctx.moveTo(bx,by); else ctx.lineTo(bx,by);
+  }
+  ctx.stroke(); ctx.restore();
+}
+
+/* Simulation core */
+let running = false, paused = false, lastTs = null, tSim = 0;
+let theta = 0, omega = 0; // rad, rad/s
+let trailAngles = [];
+recorded = [];
+let peakTimes = [], lastOmega = null;
+
+/* Initialize state */
+function resetState(){
+  const inp = inputs();
+  theta = inp.theta0deg * Math.PI / 180;
+  omega = 0;
+  tSim = 0;
+  trailAngles = [theta];
+  recorded = [{t:0, theta: theta*180/Math.PI, omega: 0, energy: energy(inp.m, inp.g, inp.L, theta, 0)}];
+  peakTimes = []; lastOmega = null;
+  mPeriodMeasured.textContent = '— s';
+  hudTime.textContent = 'Tempo: 0.00 s';
+  hudAngle.textContent = `θ: ${(theta*180/Math.PI).toFixed(3)}°`;
+  hudOmega.textContent = 'ω: 0.000°/s';
+  drawPendulum(theta);
+}
+resetState();
+
+/* Start simulation */
+function startSimulation(){
+  const inp = inputs();
+  // if everything zero and nothing to animate: just draw static
+  if (Math.abs(inp.theta0deg) < 1e-8 && Math.abs(inp.b) < 1e9 && inp.model === 'small'){
+    resetState();
+    return;
+  }
+  resetState();
+  running = true; paused = false; lastTs = null;
+  btnPause.textContent = 'Pausar';
+  requestAnimationFrame(loop);
+}
+
+/* Loop */
+function loop(ts){
+  if (!running) return;
+  if (paused){ lastTs = ts; requestAnimationFrame(loop); return; }
+  if (!lastTs) lastTs = ts;
+  let dtReal = (ts - lastTs) / 1000;
+  dtReal = Math.min(dtReal, 0.05); // clamp
+  lastTs = ts;
+  const sf = Number(speedFactor.value);
+  const dt = dtReal * sf;
+  tSim += dt;
+
+  const inp = inputs();
+
+  if (inp.model === 'small'){
+    // linearized pendulum: theta'' = - (b/m)*theta' - (g/L) * theta
+    const alpha = - (inp.b / inp.m) * omega - (inp.g / inp.L) * theta;
+    omega += alpha * dt;
+    theta += omega * dt;
+  } else {
+    // nonlinear: theta'' = - (b/m)*theta' - (g/L) * sin(theta)
+    const alpha = - (inp.b / inp.m) * omega - (inp.g / inp.L) * Math.sin(theta);
+    omega += alpha * dt;
+    theta += omega * dt;
+  }
+
+  // record
+  trailAngles.push(theta);
+  const E = energy(inp.m, inp.g, inp.L, theta, omega);
+  recorded.push({ t: tSim, theta: theta * 180 / Math.PI, omega: omega * 180 / Math.PI, energy: E });
+
+  // detect peaks (omega + → -) for period measurement
+  if (lastOmega !== null){
+    if (lastOmega > 0 && omega <= 0 && Math.abs(theta) > 0.01){
+      peakTimes.push(tSim);
+      if (peakTimes.length >= 3){
+        const diffs = [];
+        for (let i=1;i<peakTimes.length;i++) diffs.push(peakTimes[i] - peakTimes[i-1]);
+        const avg = diffs.reduce((a,b)=>a+b,0) / diffs.length;
+        mPeriodMeasured.textContent = avg.toFixed(3) + ' s';
+        if (peakTimes.length > 6) peakTimes.shift();
+      }
+    }
+  }
+  lastOmega = omega;
+
+  // stop condition: small amplitude & small omega (settled)
+  if (Math.abs(theta) < 1e-4 && Math.abs(omega) < 1e-4 && tSim > 0.05){
+    running = false;
+  }
+
+  // draw
+  clear();
+  drawSupport();
+  if (trailCb.checked) drawTrailAngles(trailAngles);
+  drawPendulum(theta);
+
+  if (energyCb.checked){
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(12, CH - 60, 240, 40);
+    ctx.fillStyle = '--'; ctx.fillStyle = '#FFD166'; ctx.font = 'bold 12px Inter';
+    ctx.fillText('ENERGIA', 20, CH - 42);
+    ctx.fillStyle = '#fff'; ctx.font = '12px Inter';
+    ctx.fillText('E = ' + E.toFixed(4) + ' J', 20, CH - 22);
+    ctx.restore();
+  }
+
+  // HUD
+  hudTime.textContent = `Tempo: ${tSim.toFixed(2)} s`;
+  hudAngle.textContent = `θ: ${(theta*180/Math.PI).toFixed(3)}°`;
+  hudOmega.textContent = `ω: ${(omega*180/Math.PI).toFixed(3)}°/s`;
+
+  // continue
+  if (running) requestAnimationFrame(loop);
+}
+
+/* UI handlers */
+btnStart.addEventListener('click', startSimulation);
+btnPause.addEventListener('click', ()=>{
+  if (!running) return;
+  paused = !paused;
+  btnPause.textContent = paused ? 'Retomar' : 'Pausar';
+});
+btnReset.addEventListener('click', ()=>{ running=false; paused=false; lastTs=null; tSim=0; trailAngles=[]; recorded=[]; peakTimes=[]; resetState(); });
+
+/* preview update */
+function updatePreview(){
+  const inp = inputs();
+  const T = smallAnglePeriod(inp.L, inp.g);
+  const E0 = energy(inp.m, inp.g, inp.L, inp.theta0deg * Math.PI / 180, 0);
+  mPeriod.textContent = isFinite(T) ? T.toFixed(3) + ' s' : '—';
+  mAmp.textContent = Math.abs(inp.theta0deg).toFixed(3) + ' °';
+  mEnergy.textContent = isFinite(E0) ? E0.toFixed(4) + ' J' : '—';
+  drawPendulum(inp.theta0deg * Math.PI / 180);
+}
+updatePreview();
+[ lengthRange,lengthNum, massRange,massNum, angleRange,angleNum, gravityNum, modelSelect, dampingInput ].forEach(el=> el.addEventListener('change', ()=>{ resetState(); updatePreview(); }));
+
+</script>
+</body>
+</html>
