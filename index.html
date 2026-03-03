@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- CSS -->
+    <link href="static/src/css/index_style.css" rel="stylesheet">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Oswald:wght@200..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <title>Protótipo Extensão</title>
+</head>
+<body>
+
+<input type="checkbox" id="menu-toggle" />
+<label for="menu-toggle" class="menu-icon">
+  <i class="fa-solid fa-bars icon-bars"></i>
+  <i class="fa-solid fa-xmark icon-close"></i>
+</label>
+
+<nav id="sidebar">
+  <ul>
+    <li><a href="#home">Início</a></li>
+    <li><a href="experimentos.html">Experimentos</a></li>
+    <li><a href="#sobre-projeto">Sobre</a></li>
+    <li><a href="#footer">Contato</a></li>
+  </ul>
+</nav>
+
+<header>
+    <nav id="navbar">
+        <i id="nav_logo">Projeto de Extensão - Física Interativa</i>
+        <ul id="nav_list">
+            <li class="nav_item"><a href="#content">Início</a></li>
+            <li class="nav_item"><a href="experimentos.html">Experimentos</a></li>
+            <li class="nav_item"><a href="#sobre-projeto">Sobre</a></li>
+            <li class="nav_item"><a href="#footer">Contato</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="content">
+<section id="home">
+    <div id="cta">
+        <h1 class="title">
+            Experimentos <span>Interativos</span> e do dia a dia que mostram a
+            <span>Importância</span> da física de forma interativa e fácil
+        </h1>
+
+        <p class="description">
+            Somos um projeto voltado ao aprendizado de forma gratuita e facilitada,
+            mostrando a importância da física mesmo para aqueles que entendam pouco do assunto
+        </p>
+
+        <div id="cta_btns">
+            <a href="#" class="btn-default">Veja mais sobre nós</a>
+        </div>
+
+        <div class="social-media-buttons">
+            <a href="#"><i class="fa-brands fa-whatsapp"></i></a>
+            <a href="#"><i class="fa-brands fa-facebook"></i></a>
+            <a href="#"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+    </div>
+
+    <div id="banner">
+        <!-- ⚠️ caminho relativo corrigido -->
+        <img src="static/src/imgs/banner.png" alt="projeto-arte">
+    </div>
+</section>
+
+<section id="experimentos">
+    <h2>Experimentos Interativos</h2>
+
+    <div class="experimentos-grid">
+        <div class="experimento-card">
+            <h3>Pêndulo Simples</h3>
+            <p>Entenda o movimento harmônico com um pêndulo interativo.</p>
+            <a href="experimentos.html" class="btn-default">Descobrir mais</a>
+        </div>
+
+        <div class="experimento-card">
+            <h3>Queda Livre</h3>
+            <p>Veja como a gravidade afeta objetos em queda.</p>
+            <a href="experimentos.html" class="btn-default">Descobrir mais</a>
+        </div>
+
+        <div class="experimento-card">
+            <h3>Plano inclinado</h3>
+            <p>Controle o ângulo do plano e veja como a aceleração muda.</p>
+            <a href="experimentos.html" class="btn-default">Descobrir mais</a>
+        </div>
+
+        <div class="experimento-card">
+            <h3>Lançamento Oblíquo</h3>
+            <p>Visualize a trajetória de um projétil.</p>
+            <a href="experimentos.html" class="btn-default">Descobrir mais</a>
+        </div>
+    </div>
+</section>
+
+<section id="sobre-projeto">
+    <h2>Sobre o projeto</h2>
+    <p>
+        Este projeto de extensão parte do curso de física da UNESP...
+    </p>
+</section>
+
+<section id="equipe">
+    <h2>Quem Somos</h2>
+
+    <div class="equipe-grid">
+        <div class="membro">
+            <img src="static/imgs/otavio.jpg" alt="Otávio Andretta">
+            <h3>Otávio Andretta</h3>
+            <p>Idealizador e programador principal</p>
+        </div>
+
+        <div class="membro">
+            <img src="static/imgs/membro2.jpg" alt="Leonardo">
+            <h3>Leonardo Quirino</h3>
+            <p>Responsável pelas simulações interativas</p>
+        </div>
+
+        <div class="membro">
+            <img src="static/imgs/membro3.jpg" alt="Igor">
+            <h3>Igor Lazarim</h3>
+            <p>Curador pedagógico e comunicação</p>
+        </div>
+
+        <div class="membro">
+            <img src="static/imgs/membro4.jpg" alt="Vinicius">
+            <h3>Vinicius Pelegrino</h3>
+            <p>Responsável pela divulgação e organização</p>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer" id="footer">
+    <p class="footer-copy">
+        &copy; 2025 Física Interativa. Todos os direitos reservados.
+    </p>
+</footer>
+
+<script>
+const links = document.querySelectorAll("#sidebar a");
+const menuToggle = document.getElementById("menu-toggle");
+
+links.forEach(link => {
+  link.addEventListener("click", () => {
+    menuToggle.checked = false;
+  });
+});
+</script>
+
+</body>
+</html>
