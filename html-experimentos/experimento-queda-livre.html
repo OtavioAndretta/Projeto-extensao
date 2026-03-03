@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- CSS -->
+    <link href="../static/src/css/experimento-queda-livre.css" rel="stylesheet">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&family=Poppins:wght@100..900&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <title>Experimento Queda Livre</title>
+</head>
+<body>
+
+<section class="simulador">
+  <h2>Simulador de Queda Livre</h2>
+
+  <div class="controls">
+    <label for="gravidade">Gravidade:</label>
+    <select id="gravidade">
+      <option value="9.8">Terra (9.8 m/s²)</option>
+      <option value="1.62">Lua (1.62 m/s²)</option>
+      <option value="3.71">Marte (3.71 m/s²)</option>
+    </select>
+  </div>
+
+  <div class="controls">
+    <label for="altura">Altura (m):</label>
+    <input type="range" id="altura" min="1" max="100" value="50">
+    <span id="altura-valor">50</span>
+  </div>
+
+  <button onclick="iniciarQueda()">Iniciar</button>
+
+  <div id="canvas-container">
+    <canvas id="simulacao" width="300" height="400"></canvas>
+  </div>
+</section>
+
+<section class="explicacao">
+  <div class="texto">
+    <h2>Explicando o que está ocorrendo</h2>
+    <p>
+      Conforme alteramos o valor da gravidade, fixando a altura, percebe-se que o objeto
+      <span>demora cada vez mais para cair</span>. Isso ocorre porque a velocidade de queda é
+      <span>diretamente proporcional à aceleração da gravidade</span>.
+      Quanto maior a velocidade, maior também a influência da
+      <span>resistência do ar</span>.
+    </p>
+  </div>
+</section>
+
+<script>
+const canvas = document.getElementById('simulacao');
+const ctx = canvas.getContext('2d');
+
+let alturaInicial = 50;
+let gravidade = 9.8;
+let tempo = 0;
+let animando = false;
+
+// Atualiza altura
+document.getElementById('altura').addEventListener('input', (e) => {
+  alturaInicial = parseInt(e.target.value);
+  document.getElementById('altura-valor').innerText = alturaInicial;
+});
+
+// Atualiza gravidade
+document.getElementById('gravidade').addEventListener('change', (e) => {
+  gravidade = parseFloat(e.target.value);
+});
+
+function iniciarQueda() {
+  tempo = 0;
+  animando = true;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  requestAnimationFrame(queda);
+}
+
+function queda() {
+  if (!animando) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const alturaPixels = canvas.height - 50;
+  const h = alturaInicial;
+  const g = gravidade;
+
+  // s = 1/2 g t²
+  const posicao = 0.5 * g * tempo * tempo;
+  const yPos = Math.min(posicao * (alturaPixels / h), alturaPixels);
+
+  // bolinha
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, yPos + 20, 10, 0, Math.PI * 2);
+  ctx.fillStyle = '#FF69B4';
+  ctx.fill();
+
+  if (yPos < alturaPixels) {
+    tempo += 0.05;
+    requestAnimationFrame(queda);
+  } else {
+    animando = false;
+  }
+}
+</script>
+
+</body>
+</html>

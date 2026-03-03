@@ -11,11 +11,13 @@ app/usuarios.db
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyc
 
 # Virtualenv
 flask-venv/
 env/
 ENV/
+venv/
 
 # Logs
 *.log'

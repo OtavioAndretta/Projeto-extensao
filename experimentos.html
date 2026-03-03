@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- CSS -->
+    <link href="static/src/css/experimentos_style.css" rel="stylesheet">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Oswald:wght@200..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <title>Experimentos</title>
+</head>
+<body>
+
+<input type="checkbox" id="menu-toggle" />
+<label for="menu-toggle" class="menu-icon">
+  <i class="fa-solid fa-bars icon-bars"></i>
+  <i class="fa-solid fa-xmark icon-close"></i>
+</label>
+
+<nav id="sidebar">
+  <ul>
+    <li><a href="index.html">Início</a></li>
+    <li><a href="experimentos.html">Experimentos</a></li>
+    <li><a href="index.html#sobre-projeto">Sobre</a></li>
+    <li><a href="index.html#footer">Contato</a></li>
+  </ul>
+</nav>
+
+<header>
+    <nav id="navbar">
+        <i id="nav_logo">Projeto de Extensão - Física Interativa</i>
+        <ul id="nav_list">
+            <li class="nav_item"><a href="index.html">Início</a></li>
+            <li class="nav_item"><a href="experimentos.html">Experimentos</a></li>
+            <li class="nav_item"><a href="index.html#sobre-projeto">Sobre</a></li>
+            <li class="nav_item"><a href="index.html#footer">Contato</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+
+<section id="intro-experimentos">
+    <h1>Experimentos Interativos</h1>
+
+    <p class="subdescricao">
+        Aqui você poderá <span>Explorar</span> conceitos físicos por meio de simulações visuais e interativas.
+        Os experimentos são pensados para te ajudar a entender os princípios da Física de forma prática e intuitiva.
+    </p>
+
+    <p class="subdescricao">
+        <span>Se divirta enquanto explora nosso</span> projeto!
+    </p>
+</section>
+
+<div class="busca-container">
+    <input type="text" id="busca" placeholder="🔍 Buscar experimento...">
+</div>
+
+<section class="experimento-grid">
+
+    <div class="experimento-card">
+        <h3><i class="fa-solid fa-person-falling"></i> Queda livre</h3>
+        <p>Explore o movimento de objetos sob a ação da gravidade</p>
+        <a href="html-experimentos/experimento-queda-livre.html"
+           class="btn-default"
+           title="Clique para acessar o experimento">
+           Ver Experimento
+        </a>
+    </div>
+
+    <div class="experimento-card">
+        <h3><i class="fas fa-compass"></i> Lançamento Oblíquo</h3>
+        <p>Analise o movimento de projéteis e suas trajetórias.</p>
+        <a href="#" class="btn-default">Ver Experimento</a>
+    </div>
+
+    <div class="experimento-card">
+        <h3><i class="fas fa-balance-scale"></i> Pêndulo Simples</h3>
+        <p>Veja como a massa e o comprimento afetam o tempo de oscilação.</p>
+        <a href="#" class="btn-default">Ver Experimento</a>
+    </div>
+
+    <div class="experimento-card">
+        <h3><i class="fas fa-angle-up"></i> Plano inclinado</h3>
+        <p>Veja como a inclinação afeta a aceleração do corpo.</p>
+        <a href="#" class="btn-default">Ver Experimento</a>
+    </div>
+
+    <div class="experimento-card">
+        <h3><i class="fas fa-arrows-alt-v"></i> Força Elástica</h3>
+        <p>Controle uma mola e visualize a força elástica.</p>
+        <a href="#" class="btn-default">Ver Experimento</a>
+    </div>
+
+</section>
+
+</main>
+
+<script>
+document.getElementById('busca').addEventListener('input', function () {
+  const cards = document.querySelectorAll('.experimento-card');
+  const query = this.value.toLowerCase();
+
+  cards.forEach(card => {
+    const titulo = card.querySelector('h3').textContent.toLowerCase();
+    card.style.display = titulo.includes(query) ? '' : 'none';
+  });
+});
+</script>
+
+</body>
+</html>
