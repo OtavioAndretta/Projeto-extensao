@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Experimento: Plano Inclinado — Física Interativa (corrigido)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#071827; --accent:#FFD166; --muted:#9aa7b2; --panel: rgba(255,255,255,0.03);
+  --hud-bg: rgba(2,8,23,0.85); --block: #FF6B6B;
+}
+*{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#e6eef6}
+body{margin:18px;background:linear-gradient(180deg,#071028 0%, #071827 60%);display:flex;flex-direction:column;align-items:center;min-height:100vh}
+h2{margin:0 0 12px 0}
+.container{width:100%;max-width:1100px;display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start}
+@media (max-width:980px){ .container{grid-template-columns:1fr;padding:12px} }
+
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid var(--panel);box-shadow:0 8px 30px rgba(2,6,12,0.6)}
+#viewport{height:520px;border-radius:10px;background:linear-gradient(180deg,#071827,#02101a);position:relative;overflow:hidden;padding:12px;display:flex;align-items:center;justify-content:center}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:transparent}
+
+.controls{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;align-items:center}
+label{min-width:120px;color:var(--muted);font-size:13px}
+input[type="range"]{flex:1}
+input[type="number"], select{width:90px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+#gravity-select{min-width:150px;width:150px}
+button{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:#071827;font-weight:700;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 12px;border-radius:8px;cursor:pointer}
+
+.hud{position:absolute;left:12px;top:12px;background:var(--hud-bg);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);backdrop-filter: blur(4px)}
+.hud h4{margin:0;color:var(--accent);font-size:13px}
+.hud .line{margin-top:6px;font-weight:700;color:#fff;font-size:15px}
+
+.panel{display:flex;flex-direction:column;gap:12px}
+.group{background:var(--panel);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+.h{color:var(--accent);font-weight:700;margin-bottom:8px}
+.metric{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02)}
+.metric:last-child{border-bottom:0}
+.metric .v{font-weight:700;color:#fff}
+.muted{color:var(--muted);font-size:13px}
+.footer-note{text-align:center;color:var(--muted);font-size:12px;margin-top:12px}
+.small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<h2>Plano Inclinado — Simulador Interativo (corrigido)</h2>
+
+<div class="container">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="small">Estude o movimento de um bloco em um plano inclinado com atrito.</div>
+      <div style="display:flex;gap:8px">
+        <button id="btn-start">Iniciar</button>
+        <button id="btn-pause" class="btn-ghost">Pausar</button>
+        <button id="btn-reset" class="btn-ghost">Resetar</button>
+      </div>
+    </div>
+
+    <div id="viewport" style="margin-top:12px">
+      <canvas id="canvas" width="900" height="520"></canvas>
+
+      <div class="hud" id="hud">
+        <h4>DADOS (tempo real)</h4>
+        <div class="line" id="hud-time">Tempo: 0.000 s</div>
+        <div class="line" id="hud-pos">s: 0.000 m</div>
+        <div class="line" id="hud-vel">v: 0.000 m/s</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="row">
+        <label>Ângulo do plano (°)</label>
+        <input id="angle-range" type="range" min="0" max="80" value="20">
+        <input id="angle-num" type="number" min="0" max="89" value="20" step="0.1">
+      </div>
+
+      <div class="row">
+        <label>Comprimento do plano (m)</label>
+        <input id="length-range" type="range" min="0.5" max="10" value="4" step="0.1">
+        <input id="length-num" type="number" min="0.1" max="100" value="4" step="0.1">
+      </div>
+
+      <div class="row">
+        <label>Massa (kg)</label>
+        <input id="mass-range" type="range" min="0.1" max="20" value="1" step="0.1">
+        <input id="mass-num" type="number" min="0.1" max="500" value="1" step="0.1">
+      </div>
+
+      <div class="row">
+        <label>Velocidade inicial (m/s)</label>
+        <input id="v0-range" type="range" min="-10" max="20" step="0.1" value="0">
+        <input id="v0-num" type="number" min="-50" max="200" value="0" step="0.1">
+      </div>
+
+      <div class="row">
+        <label>Atrito estático μs</label>
+        <input id="mu-s" type="number" min="0" max="2" step="0.01" value="0.3" style="width:90px">
+        <label style="min-width:20px;margin-left:6px" class="small">μk</label>
+        <input id="mu-k" type="number" min="0" max="2" step="0.01" value="0.25" style="width:90px">
+      </div>
+
+      <div class="row">
+        <label>Gravidade</label>
+        <select id="gravity-select">
+          <option value="9.81">Terra — 9.81</option>
+          <option value="1.62">Lua — 1.62</option>
+          <option value="3.71">Marte — 3.71</option>
+          <option value="0">Personalizada</option>
+        </select>
+        <input id="gravity-num" type="number" min="0" max="50" value="9.81" step="0.01" style="width:90px">
+      </div>
+
+      <div class="row">
+        <label>Modelo</label>
+        <select id="model-select">
+          <option value="ideal">Ideal (sem atrito)</option>
+          <option value="friction">Com atrito</option>
+        </select>
+        <label style="min-width:60px;margin-left:6px" class="muted">Vel. sim</label>
+        <input id="speedFactor" type="range" min="0.1" max="2" step="0.05" value="1" style="flex:1">
+        <div style="width:60px;text-align:center;color:var(--muted)" id="speedLabel">1.00×</div>
+      </div>
+
+      <div class="row" style="align-items:center">
+        <label>Opções</label>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="show-forces" checked> Mostrar forças</label>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="trail" checked> Rastro</label>
+      </div>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <div class="group">
+      <div class="h">Métricas & previsões</div>
+      <div class="metric"><div class="muted">Aceleração (previsão)</div><div class="v" id="m-a">— m/s²</div></div>
+      <div class="metric"><div class="muted">Tempo até o fim (est.)</div><div class="v" id="m-tend">— s</div></div>
+      <div class="metric"><div class="muted">Vel. ao fim (est.)</div><div class="v" id="m-vend">— m/s</div></div>
+      <div class="metric"><div class="muted">Estado</div><div class="v" id="m-state">—</div></div>
+    </div>
+
+    <div class="group">
+      <div class="h">Controles rápidos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="btn-defaults" class="btn-ghost">Defaults</button>
+        <button id="btn-export" class="btn-ghost">Export CSV</button>
+      </div>
+      <div class="muted" style="margin-top:8px">Export gera arquivo com t,s(m),v(m/s),a(m/s²).</div>
+    </div>
+
+    <div class="group">
+      <div class="h">Explicação</div>
+      <div class="muted" style="line-height:1.4">
+        O peso do bloco tem componente paralelo ao plano (g·sinθ) que tende a fazê-lo deslizar, e normal (g·cosθ) que define o atrito.
+        Se μs·N ≥ componente paralela, o bloco fica parado. Se desliza, μk reduz a aceleração: a ≈ g·(sinθ − μk·cosθ).
+      </div>
+    </div>
+  </aside>
+</div>
+
+<p class="footer-note">Projeto de Extensão — Física Interativa · Plano Inclinado</p>
+
+<script>
+/* ===== Plano Inclinado — Versão final corrigida ===== */
+
+/* DOM references */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const btnStart = document.getElementById('btn-start');
+const btnPause = document.getElementById('btn-pause');
+const btnReset = document.getElementById('btn-reset');
+const btnDefaults = document.getElementById('btn-defaults');
+const btnExport = document.getElementById('btn-export');
+
+const angleRange = document.getElementById('angle-range');
+const angleNum = document.getElementById('angle-num');
+const lengthRange = document.getElementById('length-range');
+const lengthNum = document.getElementById('length-num');
+const massRange = document.getElementById('mass-range');
+const massNum = document.getElementById('mass-num');
+const v0Range = document.getElementById('v0-range');
+const v0Num = document.getElementById('v0-num');
+const muS = document.getElementById('mu-s');
+const muK = document.getElementById('mu-k');
+const gravitySelect = document.getElementById('gravity-select');
+const gravityNum = document.getElementById('gravity-num');
+const modelSelect = document.getElementById('model-select');
+const speedFactor = document.getElementById('speedFactor');
+const speedLabel = document.getElementById('speedLabel');
+const showForcesCb = document.getElementById('show-forces');
+const trailCb = document.getElementById('trail');
+
+const hudTime = document.getElementById('hud-time');
+const hudPos = document.getElementById('hud-pos');
+const hudVel = document.getElementById('hud-vel');
+
+const mA = document.getElementById('m-a');
+const mTend = document.getElementById('m-tend');
+const mVend = document.getElementById('m-vend');
+const mState = document.getElementById('m-state');
+
+let CW = canvas.width, CH = canvas.height;
+const BLOCK_COLOR = '#FF6B6B';
+
+/* HiDPI & resize */
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(700, Math.floor(rect.width * dpr));
+  const h = Math.max(420, Math.floor(rect.height * dpr));
+  canvas.width = w; canvas.height = h;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  CW = canvas.width; CH = canvas.height;
+}
+window.addEventListener('resize', ()=>{ resizeCanvas(); drawStatic(); });
+resizeCanvas();
+
+/* sync helper: attach both input and change for immediate feedback */
+function sync(rangeEl, numEl){
+  rangeEl.addEventListener('input', ()=>{ numEl.value = rangeEl.value; updatePreview(); drawStatic(); });
+  numEl.addEventListener('input', ()=>{ rangeEl.value = numEl.value; updatePreview(); drawStatic(); });
+}
+sync(angleRange, angleNum);
+sync(lengthRange, lengthNum);
+sync(massRange, massNum);
+sync(v0Range, v0Num);
+
+/* gravity select behavior */
+gravitySelect.addEventListener('change', ()=>{
+  const v = parseFloat(gravitySelect.value);
+  if (v === 0){ gravityNum.disabled = false; gravityNum.value = 9.81; }
+  else { gravityNum.disabled = true; gravityNum.value = v; }
+  updatePreview();
+});
+gravityNum.addEventListener('input', updatePreview);
+
+/* speed factor */
+speedFactor.addEventListener('input', ()=> speedLabel.textContent = Number(speedFactor.value).toFixed(2) + '×');
+
+/* defaults */
+btnDefaults.addEventListener('click', ()=>{
+  angleRange.value = 20; angleNum.value = 20;
+  lengthRange.value = 4; lengthNum.value = 4;
+  massRange.value = 1; massNum.value = 1;
+  v0Range.value = 0; v0Num.value = 0;
+  muS.value = 0.3; muK.value = 0.25;
+  gravitySelect.value = '9.81'; gravityNum.value = 9.81; gravityNum.disabled = true;
+  modelSelect.value = 'friction'; speedFactor.value = 1; speedLabel.textContent='1.00×';
+  resetState();
+});
+
+/* export CSV */
+let recordedData = [];
+btnExport.addEventListener('click', ()=>{
+  if (!recordedData || recordedData.length===0){ alert('Nenhum dado registrado. Rode a simulação primeiro.'); return; }
+  const header = 't,s(m),v(m/s),a(m/s2)\n';
+  const body = recordedData.map(r => [r.t.toFixed(4), r.s.toFixed(6), r.v.toFixed(6), r.a.toFixed(6)].join(',')).join('\n');
+  const blob = new Blob([header + body], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'plano_inclinado_trajetoria.csv'; a.click(); URL.revokeObjectURL(url);
+});
+
+/* read inputs snapshot */
+function inputs(){
+  return {
+    thetaDeg: Number(angleNum.value) || 0,
+    theta: (Number(angleNum.value) || 0) * Math.PI/180,
+    L: Math.max(0.001, Number(lengthNum.value) || 1),
+    m: Math.max(0.0001, Number(massNum.value) || 1),
+    v0: Number(v0Num.value) || 0,
+    muS: Number(muS.value) || 0,
+    muK: Number(muK.value) || 0,
+    g: Number(gravityNum.value) || 9.81,
+    model: modelSelect.value || 'friction',
+    speedFactor: Number(speedFactor.value) || 1
+  };
+}
+
+/* geometry helpers */
+function planeGeometry(){
+  const inp = inputs();
+  const marginLeft = 120;
+  const marginBottom = 80;
+  const cx = marginLeft; // bottom x
+  const cy = CH - marginBottom; // bottom y
+  const maxPx = CW - cx - 60;
+  const pxPerM = Math.min(maxPx / Math.max(0.01, inp.L), 160);
+  const Lpx = inp.L * pxPerM;
+  const xTop = cx + Math.cos(inp.theta) * Lpx;
+  const yTop = cy - Math.sin(inp.theta) * Lpx;
+  return { cx, cy, xTop, yTop, pxPerM, Lpx };
+}
+
+/* convert s (m from top, s in [0,L]) to screen coords */
+function sToScreen(s){
+  const g = planeGeometry();
+  const inp = inputs();
+  s = Math.max(0, Math.min(inp.L, s));
+  const sx = g.xTop - Math.cos(inp.theta) * (s * g.pxPerM);
+  const sy = g.yTop + Math.sin(inp.theta) * (s * g.pxPerM);
+  return { x: sx, y: sy };
+}
+
+/* draw plane and block */
+function drawPlane(){
+  const g = planeGeometry();
+  ctx.save();
+  // plane
+  ctx.strokeStyle = 'rgba(200,200,255,0.95)';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(g.cx, g.cy); ctx.lineTo(g.xTop, g.yTop); ctx.stroke();
+  // markers
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(g.cx - 4, g.cy - 4, 8, 8);
+  ctx.fillRect(g.xTop - 4, g.yTop - 4, 8, 8);
+  // optional ticks
+  const inp = inputs();
+  const ticks = Math.min(20, Math.ceil(inp.L));
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  for (let i=0;i<=ticks;i++){
+    const s = (i/ticks) * inp.L;
+    const p = sToScreen(s);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 1.2, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawBlockAt(s){
+  const p = sToScreen(s);
+  const inp = inputs();
+  const theta = inp.theta;
+  const size = Math.max(12, Math.min(28, CW * 0.02));
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(-theta);
+  ctx.fillStyle = BLOCK_COLOR;
+  ctx.fillRect(-size/2, -size/2 - 2, size, size);
+  ctx.restore();
+
+  if (showForcesCb.checked) drawForcesAt(p.x, p.y);
+}
+
+/* draw forces arrows at screen point */
+function drawForcesAt(x, y){
+  const inp = inputs();
+  const theta = inp.theta;
+  const W = inp.m * inp.g;
+  const N = W * Math.cos(theta);
+  const Wpar = W * Math.sin(theta);
+  const maxStatic = inp.muS * N;
+  const signV = Math.sign(state.v) || (willStartSlide() ? 1 : 0);
+  const FfMag = state.moving ? inp.muK * N : Math.min(inp.muS * N, Math.abs(Wpar));
+  const scale = Math.max(1, Math.min(0.04, (CW/2000))); // px per N rough scaling
+  ctx.save();
+  // weight downward
+  const wy = Math.min(120, W*scale);
+  ctx.strokeStyle='rgba(255,200,60,0.95)'; ctx.lineWidth=3; drawArrow(x,y, x, y+wy); ctx.fillStyle='rgba(255,200,60,0.95)'; ctx.fillText('W', x+6, y+wy+6);
+  // normal (perp to plane) vector (pointing from block into air)
+  const nx = Math.cos(theta + Math.PI/2), ny = -Math.sin(theta + Math.PI/2);
+  const Nx = nx * Math.min(120, N*scale), Ny = ny * Math.min(120, N*scale);
+  ctx.strokeStyle='rgba(120,220,255,0.95)'; drawArrow(x,y, x+Nx, y+Ny); ctx.fillStyle='rgba(120,220,255,0.95)'; ctx.fillText('N', x+Nx+6, y+Ny+6);
+  // friction along plane, opposite motion
+  const alongx = Math.cos(theta), alongy = -Math.sin(theta);
+  const dir = -Math.sign(state.v) || -1;
+  const Ffx = alongx * dir * Math.min(120, FfMag*scale);
+  const Ffy = alongy * dir * Math.min(120, FfMag*scale);
+  ctx.strokeStyle='rgba(255,120,120,0.95)'; drawArrow(x,y, x+Ffx, y+Ffy); ctx.fillStyle='rgba(255,120,120,0.95)'; ctx.fillText('Ff', x+Ffx+6, y+Ffy+6);
+  ctx.restore();
+}
+
+function drawArrow(x1,y1,x2,y2){
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const ang = Math.atan2(y2-y1, x2-x1);
+  const head = 8;
+  ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2 - head*Math.cos(ang - Math.PI/6), y2 - head*Math.sin(ang - Math.PI/6));
+  ctx.lineTo(x2 - head*Math.cos(ang + Math.PI/6), y2 - head*Math.sin(ang + Math.PI/6));
+  ctx.lineTo(x2,y2); ctx.fill();
+}
+
+/* draw static scene */
+function drawStatic(){
+  ctx.clearRect(0,0,CW,CH);
+  drawPlane();
+  drawBlockAt(state.s);
+}
+
+/* ---------- Physics ---------- */
+/* state: s (m from top), v (m/s positive toward bottom), a (m/s2), moving boolean */
+let state = { s: 0, v: 0, a: 0, moving: false };
+let running = false, paused = false, lastTs = null, tSim = 0;
+recordedData = [];
+
+function resetState(){
+  const inp = inputs();
+  state.s = 0;
+  state.v = inp.v0;
+  state.a = 0;
+  state.moving = Math.abs(state.v) > 1e-8; // already moving if v0 != 0
+  tSim = 0; lastTs = null;
+  recordedData = [{ t:0, s: state.s, v: state.v, a: 0 }];
+  hudTime.textContent = `Tempo: 0.000 s`;
+  hudPos.textContent = `s: ${state.s.toFixed(3)} m`;
+  hudVel.textContent = `v: ${state.v.toFixed(3)} m/s`;
+  updatePreview();
+  drawStatic();
+}
+
+/* will it start sliding from rest? */
+function willStartSlide(){
+  const inp = inputs();
+  const Wpar = inp.m * inp.g * Math.sin(inp.theta);
+  const N = inp.m * inp.g * Math.cos(inp.theta);
+  return Math.abs(Wpar) > (inp.muS * N);
+}
+
+/* start simulation */
+function startSimulation(){
+  resetState();
+  const inp = inputs();
+  if (inp.model === 'friction' && !willStartSlide() && Math.abs(inp.v0) < 1e-8){
+    // static equilibrium, just update preview and don't run
+    updatePreview();
+    return;
+  }
+  running = true; paused = false; lastTs = null;
+  btnPause.textContent = 'Pausar';
+  requestAnimationFrame(step);
+}
+
+/* main integration loop (semi-implicit Euler) */
+function step(ts){
+  if (!running) return;
+  if (paused){ lastTs = ts; requestAnimationFrame(step); return; }
+  if (!lastTs) lastTs = ts;
+  let dtReal = (ts - lastTs) / 1000;
+  dtReal = Math.min(dtReal, 0.05);
+  lastTs = ts;
+  const sf = Number(speedFactor.value) || 1;
+  const dt = dtReal * sf;
+  tSim += dt;
+
+  const inp = inputs();
+  const W = inp.m * inp.g;
+  const Wpar = W * Math.sin(inp.theta); // downwards
+  const N = W * Math.cos(inp.theta);
+  const maxStatic = inp.muS * N;
+
+  if (!state.moving){
+    if (Math.abs(state.v) > 1e-6) state.moving = true;
+    else {
+      if (inp.model === 'friction' && Math.abs(Wpar) > maxStatic) state.moving = true;
+      else if (inp.model === 'ideal' && Math.abs(Wpar) > 1e-9) state.moving = true;
+      else { state.a = 0; state.v = 0; } // stays at rest
+    }
+  }
+
+  if (state.moving){
+    const signV = Math.sign(state.v) || 1;
+    let Ff = 0;
+    if (inp.model === 'ideal') Ff = 0;
+    else Ff = -signV * inp.muK * N; // along plane
+    const Fnet = Wpar + Ff; // positive downwards
+    const a = Fnet / inp.m;
+    state.v += a * dt;
+    state.s += state.v * dt;
+    state.a = a;
+    // if small v and static friction can hold now, snap to rest
+    if (Math.abs(state.v) < 1e-6 && inp.model === 'friction'){
+      const WparNow = Wpar;
+      if (Math.abs(WparNow) <= maxStatic){
+        state.v = 0; state.a = 0; state.moving = false;
+      }
+    }
+  }
+
+  // clamp s
+  if (state.s < 0){ state.s = 0; state.v = Math.max(0, state.v); }
+  if (state.s > inp.L){ state.s = inp.L; state.v = Math.min(0, state.v); running = false; }
+
+  recordedData.push({ t: tSim, s: state.s, v: state.v, a: state.a });
+
+  // render
+  drawStatic();
+  if (trailCb.checked) drawTrail();
+  drawBlockAt(state.s);
+
+  // HUD
+  hudTime.textContent = `Tempo: ${tSim.toFixed(3)} s`;
+  hudPos.textContent = `s: ${state.s.toFixed(3)} m`;
+  hudVel.textContent = `v: ${state.v.toFixed(3)} m/s`;
+
+  updatePreview();
+
+  if (running) requestAnimationFrame(step);
+}
+
+/* draw trail */
+function drawTrail(){
+  if (!recordedData || recordedData.length === 0) return;
+  ctx.save();
+  ctx.beginPath();
+  for (let i=0;i<recordedData.length;i++){
+    const p = recordedData[i];
+    const scr = sToScreen(p.s);
+    if (i===0) ctx.moveTo(scr.x, scr.y); else ctx.lineTo(scr.x, scr.y);
+  }
+  ctx.strokeStyle = 'rgba(255,180,180,0.95)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* update preview (analytics) */
+function updatePreview(){
+  const inp = inputs();
+  const W = inp.m * inp.g;
+  const Wpar = W * Math.sin(inp.theta);
+  const N = W * Math.cos(inp.theta);
+  const maxStatic = inp.muS * N;
+
+  let aPred = 0, tEnd = Infinity, vEnd = NaN, stateText = '—';
+  if (inp.model === 'ideal'){
+    aPred = inp.g * Math.sin(inp.theta);
+    stateText = 'Sem atrito (ideal)';
+    // time to end from current state
+    const Lrem = Math.max(0, inp.L - state.s);
+    if (Math.abs(aPred) < 1e-9) tEnd = (Math.abs(state.v) > 1e-9) ? Lrem / Math.abs(state.v) : Infinity;
+    else {
+      const A = 0.5 * aPred, B = state.v, C = -Lrem;
+      const disc = B*B - 4*A*C;
+      if (disc < 0) tEnd = Infinity; else {
+        const r1 = (-B + Math.sqrt(disc)) / (2*A);
+        const r2 = (-B - Math.sqrt(disc)) / (2*A);
+        tEnd = Math.max(r1, r2, 0);
+      }
+    }
+    vEnd = state.v + aPred * (isFinite(tEnd) ? tEnd : 0);
+  } else { // friction
+    if (Math.abs(Wpar) <= maxStatic && Math.abs(state.v) < 1e-8){
+      stateText = 'Em repouso (atrito estático vence)';
+      aPred = 0; tEnd = Infinity; vEnd = 0;
+    } else {
+      aPred = (Wpar - inp.muK * N) / inp.m;
+      stateText = 'Deslizante (com atrito)';
+      const Lrem = Math.max(0, inp.L - state.s);
+      if (Math.abs(aPred) < 1e-9) tEnd = (Math.abs(state.v) > 1e-9) ? Lrem / Math.abs(state.v) : Infinity;
+      else {
+        const A = 0.5 * aPred, B = state.v, C = -Lrem;
+        const disc = B*B - 4*A*C;
+        if (disc < 0) tEnd = Infinity; else {
+          const r1 = (-B + Math.sqrt(disc)) / (2*A);
+          const r2 = (-B - Math.sqrt(disc)) / (2*A);
+          tEnd = Math.max(r1, r2, 0);
+        }
+      }
+      vEnd = state.v + aPred * (isFinite(tEnd) ? tEnd : 0);
+    }
+  }
+
+  mA.textContent = isFinite(aPred) ? aPred.toFixed(4) + ' m/s²' : '—';
+  mTend.textContent = isFinite(tEnd) ? tEnd.toFixed(3) + ' s' : '—';
+  mVend.textContent = isFinite(vEnd) ? vEnd.toFixed(3) + ' m/s' : '—';
+  mState.textContent = stateText;
+}
+
+/* initial setup */
+resetState();
+
+/* UI event wiring */
+btnStart.addEventListener('click', ()=> startSimulation());
+btnPause.addEventListener('click', ()=>{ if (!running) return; paused = !paused; btnPause.textContent = paused ? 'Retomar' : 'Pausar'; });
+btnReset.addEventListener('click', ()=>{ running=false; paused=false; lastTs=null; tSim=0; recordedData=[]; resetState(); });
+
+[ angleRange, angleNum, lengthRange, lengthNum, massRange, massNum, v0Range, v0Num, muS, muK, gravityNum, modelSelect ].forEach(el=>{
+  el.addEventListener('change', ()=> resetState());
+});
+
+/* ensure we draw immediately at load and after resize */
+resizeCanvas();
+resetState();
+drawStatic();
+updatePreview();
+
+</script>
+</body>
+</html>

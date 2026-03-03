@@ -472,7 +472,6 @@ function loop(ts){
   if (running) requestAnimationFrame(loop);
 }
 
-/* UI handlers */
 btnStart.addEventListener('click', startSimulation);
 btnPause.addEventListener('click', ()=>{
   if (!running) return;
