@@ -254,7 +254,6 @@ function getInputs() {
 // Escala: Garante que o objeto nunca saia da tela verticalmente
 function getScale() {
   const inp = getInputs();
-  // Se h0 for 50m, 1 metro = CH / 60 pixels (com margem)
   const margin = 60;
   const maxH = Math.max(inp.h0, 20); 
   return (CH - margin) / maxH;
@@ -266,7 +265,6 @@ function drawStatic() {
   const scale = getScale();
   const groundY = CH - 20;
 
-  // Chão
   ctx.strokeStyle = '#2a3a4a';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -279,10 +277,9 @@ function drawStatic() {
 }
 
 function drawProjectile(y, scale, groundY) {
-  const x = CW / 2; // Centraliza sempre no meio do canvas visível
+  const x = CW / 2; 
   const py = groundY - (y * scale);
   
-  // Rastro
   if (trail.length > 1) {
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(255, 107, 107, 0.3)';
@@ -294,13 +291,11 @@ function drawProjectile(y, scale, groundY) {
     ctx.stroke();
   }
 
-  // Objeto
   ctx.fillStyle = '#FF6B6B';
   ctx.beginPath();
   ctx.arc(x, py, 12, 0, Math.PI * 2);
   ctx.fill();
   
-  // Brilho
   ctx.shadowBlur = 10;
   ctx.shadowColor = '#FF6B6B';
   ctx.stroke();
@@ -312,7 +307,7 @@ function update(ts) {
   if (!lastTs) lastTs = ts;
   
   let dt = (ts - lastTs) / 1000;
-  dt = Math.min(dt, 0.03); // Trava de segurança para frames lentos
+  dt = Math.min(dt, 0.03); 
   lastTs = ts;
   tSim += dt;
 
@@ -322,7 +317,6 @@ function update(ts) {
     sim.y = inp.h0 + inp.v0 * tSim - 0.5 * inp.g * tSim * tSim;
     sim.v = inp.v0 - inp.g * tSim;
   } else {
-    // Integração numérica Euler para Arastre
     const drag = -inp.k * sim.v * Math.abs(sim.v);
     const accel = -inp.g + drag;
     sim.v += accel * dt;
@@ -337,7 +331,6 @@ function update(ts) {
   trail.push(sim.y);
   recordedData.push({t: tSim, y: sim.y, v: Math.abs(sim.v)});
   
-  // Update UI
   document.getElementById('hud-time').textContent = `Tempo: ${tSim.toFixed(2)} s`;
   document.getElementById('hud-height').textContent = `Altura: ${sim.y.toFixed(2)} m`;
   document.getElementById('hud-vel').textContent = `Vel: ${Math.abs(sim.v).toFixed(2)} m/s`;
@@ -350,7 +343,6 @@ function update(ts) {
   if (running) requestAnimationFrame(update);
 }
 
-// Eventos
 document.getElementById('btn-start').addEventListener('click', () => {
   const inp = getInputs();
   sim.y = inp.h0;
@@ -377,7 +369,6 @@ document.getElementById('btn-reset').addEventListener('click', () => {
   drawStatic();
 });
 
-// Sincronização de Inputs
 const hRange = document.getElementById('height-range');
 const hNum = document.getElementById('height-num');
 hRange.addEventListener('input', () => { hNum.value = hRange.value; drawStatic(); calculatePreview(); });
