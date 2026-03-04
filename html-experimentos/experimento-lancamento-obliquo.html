@@ -31,6 +31,7 @@
     border-radius:12px;padding:14px;box-shadow: 0 6px 24px rgba(3,6,12,0.6);border:1px solid rgba(255,255,255,0.03);
   }
   .sim-wrap{display:flex;flex-direction:column;gap:12px;}
+  /* viewport height kept generous on desktop, responsive on mobile below */
   #viewport{width:100%;height:640px;background:linear-gradient(180deg,#071827 0%, #02101a 100%);border-radius:10px;display:flex;align-items:flex-end;justify-content:center;padding:12px;box-sizing:border-box;position:relative;overflow:hidden;}
   canvas{background:transparent;border-radius:8px;display:block;width:100%;height:100%;}
 
@@ -64,6 +65,17 @@
 
   /* footer small */
   .footer-note{font-size:12px;color:var(--muted);text-align:center;margin-top:12px;}
+
+  /* MOBILE: ajusta viewport e HUD para caber corretamente em portrait */
+  @media (max-width: 600px){
+    /* usa uma altura proporcional à largura (16:9) mas com min-height */
+    #viewport{height: calc(min(420px, 56.25vw)); min-height:220px; padding:10px;}
+    .hud{left:8px;top:8px;padding:8px;}
+    .hud .line{font-size:13px;}
+    .card{padding:10px;}
+    label{min-width:74px;}
+    input[type="number"]{width:68px;}
+  }
 </style>
 </head>
 <body>
@@ -189,30 +201,54 @@
 
 <script>
 /* -----------------------
-   Setup & utilities
+   Setup & utilities (apenas responsividade alterada)
    ----------------------- */
 const canvas = document.getElementById('scene');
 const ctx = canvas.getContext('2d');
 
-let CW = canvas.width, CH = canvas.height;
-function resizeCanvas(){ // adapt to container width while keeping aspect ratio
+/* IMPORTANT: CW and CH will represent CSS pixels (logical pixels visible on screen).
+   Backing buffer (canvas.width/height) will be set to CSS * devicePixelRatio for sharpness.
+*/
+let CW = canvas.clientWidth || 900;
+let CH = canvas.clientHeight || 560;
+
+function resizeCanvas(){ // adapt to container width while keeping aspect ratio and HiDPI
   const rect = canvas.getBoundingClientRect();
-  const desiredW = Math.max(600, Math.floor(rect.width * (window.devicePixelRatio || 1)));
-  const desiredH = Math.max(340, Math.floor(rect.height * (window.devicePixelRatio || 1)));
-  canvas.width = desiredW;
-  canvas.height = desiredH;
-  // keep CSS size
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  CW = canvas.width; CH = canvas.height;
-  // reset transform for crisp drawing
+  // allow smaller minimums to fit narrow phones (fixed per your report)
+  const cssW = Math.max(280, Math.floor(rect.width));
+  // use a reasonable min height so ground stays visible
+  const cssH = Math.max(200, Math.floor(rect.height));
+
   const dpr = window.devicePixelRatio || 1;
+
+  // Set backing buffer size in physical pixels for crisp rendering
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+
+  // Keep CSS display size
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+
+  // Map drawing units to CSS pixels (so existing drawing math that uses CW/CH continues to work)
   ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  // Update globals (CSS pixels)
+  CW = cssW;
+  CH = cssH;
 }
-window.addEventListener('resize', () => { resizeCanvas(); drawOnce(); });
+
+/* Observe size changes of the viewport (handles keyboard, safe-area, orientation, UI chrome) */
+const viewport = document.getElementById('viewport');
+const ro = new ResizeObserver(()=>{ resizeCanvas(); drawOnce(); });
+ro.observe(viewport);
+
+/* Also reflow on orientation change (some mobiles change available height) */
+window.addEventListener('orientationchange', ()=>{ setTimeout(()=>{ resizeCanvas(); drawOnce(); }, 120); });
+
+/* initial size */
 resizeCanvas();
 
-/* Elements */
+/* Elements (unchanged) */
 const speedRange = document.getElementById('speed-range');
 const speedNum = document.getElementById('speed-num');
 const angleRange = document.getElementById('angle-range');
@@ -350,9 +386,12 @@ function currentInputs(){ return {
   speedFactor: Number(speedFactor.value)
 };}
 
-/* World -> screen mapping helpers (we compute scale to fit path) */
+/* World -> screen mapping helpers (we compute scale to fit path)
+   NOTE: adapt margin responsively: smaller margin on narrow screens so plotted path fits better.
+*/
 function computeScales(rangeMeters, maxHeightMeters){
-  const margin = 40;
+  // responsive margin: less on small widths
+  const margin = (CW < 420) ? 28 : 40;
   const availW = CW - margin*2;
   const availH = CH - margin*2;
   const xScale = (rangeMeters>0 && isFinite(rangeMeters))? (availW / (rangeMeters*1.05)) : (availW / 50);
@@ -658,19 +697,6 @@ drawOnce();
 document.querySelectorAll('input,select').forEach(e=>{
   e.addEventListener('change', updatePreview);
 });
-
-/* small helper to keep canvas crisp on high-DPI displays (initial) */
-function fixHiDPICanvas(){
-  const dpr = window.devicePixelRatio || 1;
-  const cssW = canvas.clientWidth || 900;
-  const cssH = canvas.clientHeight || 560;
-  canvas.width = Math.max(600, Math.floor(cssW * dpr));
-  canvas.height = Math.max(340, Math.floor(cssH * dpr));
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-fixHiDPICanvas();
-window.addEventListener('resize', () => { fixHiDPICanvas(); drawOnce(); });
-
 </script>
 </body>
 </html>
