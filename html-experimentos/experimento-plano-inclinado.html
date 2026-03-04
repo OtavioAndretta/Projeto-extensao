@@ -379,33 +379,33 @@ function drawBlockAt(s){
   if (showForcesCb.checked) drawForcesAt(p.x, p.y);
 }
 
-// /* draw forces arrows at screen point */
-// function drawForcesAt(x, y){
-//   const inp = inputs();
-//   const theta = inp.theta;
-//   const W = inp.m * inp.g;
-//   const N = W * Math.cos(theta);
-//   const Wpar = W * Math.sin(theta);
-//   const maxStatic = inp.muS * N;
-//   const signV = Math.sign(state.v) || (willStartSlide() ? 1 : 0);
-//   const FfMag = state.moving ? inp.muK * N : Math.min(inp.muS * N, Math.abs(Wpar));
-//   const scale = Math.max(1, Math.min(0.04, (CW/2000))); // px per N rough scaling
-//   ctx.save();
-//   // weight downward
-//   const wy = Math.min(120, W*scale);
-//   ctx.strokeStyle='rgba(255,200,60,0.95)'; ctx.lineWidth=3; drawArrow(x,y, x, y+wy); ctx.fillStyle='rgba(255,200,60,0.95)'; ctx.fillText('W', x+6, y+wy+6);
-//   // normal (perp to plane) vector (pointing from block into air)
-//   const nx = Math.cos(theta + Math.PI/2), ny = -Math.sin(theta + Math.PI/2);
-//   const Nx = nx * Math.min(120, N*scale), Ny = ny * Math.min(120, N*scale);
-//   ctx.strokeStyle='rgba(120,220,255,0.95)'; drawArrow(x,y, x+Nx, y+Ny); ctx.fillStyle='rgba(120,220,255,0.95)'; ctx.fillText('N', x+Nx+6, y+Ny+6);
-//   // friction along plane, opposite motion
-//   const alongx = Math.cos(theta), alongy = -Math.sin(theta);
-//   const dir = -Math.sign(state.v) || -1;
-//   const Ffx = alongx * dir * Math.min(120, FfMag*scale);
-//   const Ffy = alongy * dir * Math.min(120, FfMag*scale);
-//   ctx.strokeStyle='rgba(255,120,120,0.95)'; drawArrow(x,y, x+Ffx, y+Ffy); ctx.fillStyle='rgba(255,120,120,0.95)'; ctx.fillText('Ff', x+Ffx+6, y+Ffy+6);
-//   ctx.restore();
-// }
+/* draw forces arrows at screen point */
+function drawForcesAt(x, y){
+  const inp = inputs();
+  const theta = inp.theta;
+  const W = inp.m * inp.g;
+  const N = W * Math.cos(theta);
+  const Wpar = W * Math.sin(theta);
+  const maxStatic = inp.muS * N;
+  const signV = Math.sign(state.v) || (willStartSlide() ? 1 : 0);
+  const FfMag = state.moving ? inp.muK * N : Math.min(inp.muS * N, Math.abs(Wpar));
+  const scale = Math.max(1, Math.min(0.04, (CW/2000))); // px per N rough scaling
+  ctx.save();
+  // weight downward
+  const wy = Math.min(120, W*scale);
+  ctx.strokeStyle='rgba(255,200,60,0.95)'; ctx.lineWidth=3; drawArrow(x,y, x, y+wy); ctx.fillStyle='rgba(255,200,60,0.95)'; ctx.fillText('W', x+6, y+wy+6);
+  // normal (perp to plane) vector (pointing from block into air)
+  const nx = Math.cos(theta + Math.PI/2), ny = -Math.sin(theta + Math.PI/2);
+  const Nx = nx * Math.min(120, N*scale), Ny = ny * Math.min(120, N*scale);
+  ctx.strokeStyle='rgba(120,220,255,0.95)'; drawArrow(x,y, x+Nx, y+Ny); ctx.fillStyle='rgba(120,220,255,0.95)'; ctx.fillText('N', x+Nx+6, y+Ny+6);
+  // friction along plane, opposite motion
+  const alongx = Math.cos(theta), alongy = -Math.sin(theta);
+  const dir = -Math.sign(state.v) || -1;
+  const Ffx = alongx * dir * Math.min(120, FfMag*scale);
+  const Ffy = alongy * dir * Math.min(120, FfMag*scale);
+  ctx.strokeStyle='rgba(255,120,120,0.95)'; drawArrow(x,y, x+Ffx, y+Ffy); ctx.fillStyle='rgba(255,120,120,0.95)'; ctx.fillText('Ff', x+Ffx+6, y+Ffy+6);
+  ctx.restore();
+}
 
 function drawArrow(x1,y1,x2,y2){
   ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
