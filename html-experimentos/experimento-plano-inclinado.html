@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Experimento: Plano Inclinado — Física Interativa (corrigido)</title>
+<title>Experimento: Plano Inclinado — Física Interativa</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,6 +21,7 @@ h2{margin:0 0 12px 0}
 @media (max-width:980px){ .container{grid-template-columns:1fr;padding:12px} }
 
 .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid var(--panel);box-shadow:0 8px 30px rgba(2,6,12,0.6)}
+/* viewport: desktop generous height; mobile responsive below */
 #viewport{height:520px;border-radius:10px;background:linear-gradient(180deg,#071827,#02101a);position:relative;overflow:hidden;padding:12px;display:flex;align-items:center;justify-content:center}
 canvas{width:100%;height:100%;display:block;border-radius:6px;background:transparent}
 
@@ -46,11 +47,21 @@ button{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;c
 .muted{color:var(--muted);font-size:13px}
 .footer-note{text-align:center;color:var(--muted);font-size:12px;margin-top:12px}
 .small{font-size:13px;color:var(--muted)}
+
+/* MOBILE: ajustar viewport, HUD e inputs para telas estreitas */
+@media (max-width: 600px){
+  #viewport{height: calc(min(520px, 56.25vw)); min-height:220px; padding:10px;}
+  .hud{left:8px;top:8px;padding:8px;}
+  .hud .line{font-size:13px;}
+  label{min-width:86px}
+  input[type="number"], select{width:78px}
+  .card{padding:10px}
+}
 </style>
 </head>
 <body>
 
-<h2>Plano Inclinado — Simulador Interativo (corrigido)</h2>
+<h2>Plano Inclinado — Simulador Interativo</h2>
 
 <div class="container">
   <div class="card">
@@ -167,11 +178,12 @@ button{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;c
 <p class="footer-note">Projeto de Extensão — Física Interativa · Plano Inclinado</p>
 
 <script>
-/* ===== Plano Inclinado — Versão final corrigida ===== */
+/* ===== Plano Inclinado — Responsividade aplicada (apenas ajustes de canvas / responsive) ===== */
 
 /* DOM references */
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const viewport = document.getElementById('viewport');
 
 const btnStart = document.getElementById('btn-start');
 const btnPause = document.getElementById('btn-pause');
@@ -206,25 +218,43 @@ const mTend = document.getElementById('m-tend');
 const mVend = document.getElementById('m-vend');
 const mState = document.getElementById('m-state');
 
-let CW = canvas.width, CH = canvas.height;
+let CW = canvas.clientWidth || 900; // CSS pixels visible
+let CH = canvas.clientHeight || 520; // CSS pixels visible
 const BLOCK_COLOR = '#FF6B6B';
 
-/* HiDPI & resize */
+/* Robust HiDPI resize based on CSS size of the canvas (keeps drawings inside visible area on mobile) */
 function resizeCanvas(){
   const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  const w = Math.max(700, Math.floor(rect.width * dpr));
-  const h = Math.max(420, Math.floor(rect.height * dpr));
-  canvas.width = w; canvas.height = h;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  CW = canvas.width; CH = canvas.height;
+  // allow smaller minimums for narrow phones
+  const cssW = Math.max(280, Math.floor(rect.width));
+  const cssH = Math.max(200, Math.floor(rect.height));
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  // set backing buffer in physical pixels
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+
+  // keep CSS display size
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+
+  // map drawing coords to CSS pixels
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // update globals used by drawing routines (CSS pixels)
+  CW = cssW;
+  CH = cssH;
 }
-window.addEventListener('resize', ()=>{ resizeCanvas(); drawStatic(); });
+
+const ro = new ResizeObserver(()=>{ resizeCanvas(); drawStatic(); });
+ro.observe(viewport);
+
+/* orientation change */
+window.addEventListener('orientationchange', ()=>{ setTimeout(()=>{ resizeCanvas(); drawStatic(); }, 100); });
+
+/* initial resize */
 resizeCanvas();
 
-/* sync helper: attach both input and change for immediate feedback */
 function sync(rangeEl, numEl){
   rangeEl.addEventListener('input', ()=>{ numEl.value = rangeEl.value; updatePreview(); drawStatic(); });
   numEl.addEventListener('input', ()=>{ rangeEl.value = numEl.value; updatePreview(); drawStatic(); });
@@ -531,7 +561,6 @@ function updatePreview(){
   if (inp.model === 'ideal'){
     aPred = inp.g * Math.sin(inp.theta);
     stateText = 'Sem atrito (ideal)';
-    // time to end from current state
     const Lrem = Math.max(0, inp.L - state.s);
     if (Math.abs(aPred) < 1e-9) tEnd = (Math.abs(state.v) > 1e-9) ? Lrem / Math.abs(state.v) : Infinity;
     else {
